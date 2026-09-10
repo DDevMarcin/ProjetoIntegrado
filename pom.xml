@@ -28,51 +28,6 @@
             <version>21.0.6</version>
         </dependency>
 
-        <!-- Banco de dados: driver SQLite -->
-        <dependency>
-            <groupId>org.xerial</groupId>
-            <artifactId>sqlite-jdbc</artifactId>
-            <version>3.46.1.0</version>
-        </dependency>
-
-        <!-- Spring: contexto + injeção de dependência (sem servidor HTTP) -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-context</artifactId>
-            <version>6.1.13</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-orm</artifactId>
-            <version>6.1.13</version>
-        </dependency>
-
-        <!-- Spring Data JPA -->
-        <dependency>
-            <groupId>org.springframework.data</groupId>
-            <artifactId>spring-data-jpa</artifactId>
-            <version>3.3.4</version>
-        </dependency>
-
-        <!-- Hibernate + dialect community (necessário para SQLite) -->
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-core</artifactId>
-            <version>6.5.2.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>org.hibernate.orm</groupId>
-            <artifactId>hibernate-community-dialects</artifactId>
-            <version>6.5.2.Final</version>
-        </dependency>
-
-        <!-- Pool de conexão exigido pelo Spring Data JPA -->
-        <dependency>
-            <groupId>com.zaxxer</groupId>
-            <artifactId>HikariCP</artifactId>
-            <version>5.1.0</version>
-        </dependency>
-
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
@@ -105,9 +60,8 @@
                         <!-- Default configuration for running with: mvn clean javafx:run -->
                         <id>default-cli</id>
                         <configuration>
-                            <!-- Sem barra "/" porque o module-info.java foi removido
-                                 (evita conflito de módulos Java com Spring+Hibernate) -->
-                            <mainClass>com.managementsystem.demo1.MainApp</mainClass>
+                            <mainClass>com.managementsystem.demo1/com.managementsystem.demo1.HelloApplication
+                            </mainClass>
                             <launcher>app</launcher>
                             <jlinkZipName>app</jlinkZipName>
                             <jlinkImageName>app</jlinkImageName>
