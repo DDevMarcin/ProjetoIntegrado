@@ -5,6 +5,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 
 public class ConnectionFactory {
+    private ConnectionFactory() {
+    }
+
     private static final String URL = "jdbc:sqlite:sistema_artesa.db";
 
     public static Connection getConnection() {
