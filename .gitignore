@@ -37,3 +37,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+# Banco de dados SQLite
+*.db
+*.db.backup
