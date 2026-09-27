@@ -1,6 +1,5 @@
 package com.managementsystem.demo1.service;
 
-import com.managementsystem.demo1.config.AppConfig;
 import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.model.Produto;
 import com.managementsystem.demo1.model.ProdutoMaterial;
