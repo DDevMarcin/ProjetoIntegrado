@@ -2,6 +2,7 @@ package com.managementsystem.demo1.controller;
 
 import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.model.Produto;
+import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.service.ItemMaterialInput;
 import com.managementsystem.demo1.service.MaterialService;
 import com.managementsystem.demo1.service.ProdutoService;
@@ -16,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
-public class CadastroProdutoController {
+public class CadastrarProdutoController {
 
     @FXML private TextField campoNome;
     @FXML private TextField campoDescricao;
@@ -32,11 +33,10 @@ public class CadastroProdutoController {
     private final ProdutoService produtoService;
     private final MaterialService materialService;
 
-    // Guardam os materiais que a artesã foi adicionando antes de salvar o produto
     private final List<Material> materiaisEscolhidos = new ArrayList<>();
     private final List<BigDecimal> quantidadesEscolhidas = new ArrayList<>();
 
-    public CadastroProdutoController(ProdutoService produtoService, MaterialService materialService) {
+    public CadastrarProdutoController(ProdutoService produtoService, MaterialService materialService) {
         this.produtoService = produtoService;
         this.materialService = materialService;
     }
@@ -57,7 +57,7 @@ public class CadastroProdutoController {
             }
             @Override
             public Material fromString(String s) {
-                return null; // não precisa converter de volta, só exibição
+                return null;
             }
         });
     }
@@ -71,18 +71,13 @@ public class CadastroProdutoController {
         }
         BigDecimal quantidade;
         try {
-            quantidade = new BigDecimal(
-                    campoQuantidadeMaterial.getText().replace(",", ".")
-            );
-
-            if (quantidade.compareTo(BigDecimal.ZERO) <= 0) {
-                throw new NumberFormatException();
-            }
-
+            quantidade = new BigDecimal(campoQuantidadeMaterial.getText().replace(",", "."));
+            if (quantidade.signum() <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             labelStatus.setText("Quantidade do material inválida.");
             return;
         }
+
         materiaisEscolhidos.add(material);
         quantidadesEscolhidas.add(quantidade);
 
@@ -113,9 +108,11 @@ public class CadastroProdutoController {
                         quantidadesEscolhidas.get(i)));
             }
 
-            Produto produto = produtoService.cadastrarComMateriais(nome, descricao, quantidade, itens);
+            Produto produto = produtoService.cadastrarComMateriais(
+                    nome, descricao, TipoProduto.PRE_PRONTO,
+                    quantidade, null, null, itens);
 
-            labelStatus.setText("Produto salvo! Valor calculado: R$ " + String.format("%.2f", produto.getValor()));
+            labelStatus.setText("Produto salvo! Valor calculado: R$ " + produto.getValor());
             limparFormulario();
             atualizarListaProdutos();
 
@@ -140,8 +137,8 @@ public class CadastroProdutoController {
     private void atualizarListaProdutos() {
         listaProdutos.setItems(FXCollections.observableArrayList(
                 produtoService.listarTodos().stream()
-                        .map(p -> String.format("#%d - %s | qtd: %d | R$ %.2f",
-                                p.getIdProduto(), p.getNome(), p.getQuantidade(), p.getValor()))
+                        .map(p -> String.format("#%d - %s | qtd: %d | R$ %s",
+                                p.getIdProduto(), p.getNome(), p.getQuantidadeEstoque(), p.getValor()))
                         .toList()
         ));
     }

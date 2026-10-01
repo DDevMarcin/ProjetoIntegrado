@@ -3,6 +3,7 @@ package com.managementsystem.demo1.service;
 import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.model.Produto;
 import com.managementsystem.demo1.model.ProdutoMaterial;
+import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.repository.MaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
@@ -24,23 +25,17 @@ public class ProdutoService {
         this.materialRepository = materialRepository;
     }
 
-    /**
-     * Cadastra um produto pré-pronto calculando o valor a partir dos materiais
-     * utilizados, conforme o diagrama de sequência (calcularValorProduto ->
-     * consultarDadosMateriais -> calcularValorTotal).
-     */
     @Transactional
-    public Produto cadastrarComMateriais(String nome, String descricao, Integer quantidade,
-                                         List<ItemMaterialInput> itensMaterial) {
+    public Produto cadastrarComMateriais(String nome, String descricao, TipoProduto tipo,
+                                         Integer quantidadeEstoque, Integer prazoProducaoDias,
+                                         String observacoes, List<ItemMaterialInput> itensMaterial) {
 
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
-
-        if (quantidade == null || quantidade < 0) {
-            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
+        if (tipo == null) {
+            throw new IllegalArgumentException("Tipo do produto é obrigatório.");
         }
-
         if (itensMaterial == null || itensMaterial.isEmpty()) {
             throw new IllegalArgumentException("Informe ao menos um material usado no produto.");
         }
@@ -48,38 +43,28 @@ public class ProdutoService {
         Produto produto = new Produto();
         produto.setNome(nome);
         produto.setDescricao(descricao);
-        produto.setQuantidade(quantidade);
+        produto.setTipo(tipo);
+
+        if (tipo == TipoProduto.PRE_PRONTO) {
+            produto.setQuantidadeEstoque(quantidadeEstoque == null ? 0 : quantidadeEstoque);
+        } else {
+            produto.setPrazoProducaoDias(prazoProducaoDias);
+            produto.setObservacoes(observacoes);
+        }
 
         BigDecimal valorTotal = BigDecimal.ZERO;
-
         List<ProdutoMaterial> vinculos = new ArrayList<>();
 
         for (ItemMaterialInput item : itensMaterial) {
-
-            if (item.quantidadeUtilizada() == null
-                    || item.quantidadeUtilizada().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException(
-                        "Quantidade utilizada do material deve ser maior que zero."
-                );
+            if (item.quantidadeUtilizada() == null || item.quantidadeUtilizada().signum() <= 0) {
+                throw new IllegalArgumentException("Quantidade utilizada do material deve ser maior que zero.");
             }
-
             Material material = materialRepository.findById(item.idMaterial())
                     .orElseThrow(() -> new NoSuchElementException(
-                            "Material não encontrado: id " + item.idMaterial()
-                    ));
+                            "Material não encontrado: id " + item.idMaterial()));
 
-            BigDecimal valorMaterial = material.getPrecoUnidade()
-                    .multiply(item.quantidadeUtilizada());
-
-            valorTotal = valorTotal.add(valorMaterial);
-
-            vinculos.add(
-                    new ProdutoMaterial(
-                            produto,
-                            material,
-                            item.quantidadeUtilizada()
-                    )
-            );
+            valorTotal = valorTotal.add(material.getPrecoUnidade().multiply(item.quantidadeUtilizada()));
+            vinculos.add(new ProdutoMaterial(produto, material, item.quantidadeUtilizada()));
         }
 
         produto.setValor(valorTotal);
@@ -92,36 +77,34 @@ public class ProdutoService {
         return produtoRepository.findAll();
     }
 
+    public Produto buscarPorId(Long id) {
+        return produtoRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Produto não encontrado: id " + id));
+    }
+
     public List<Produto> buscarPorNome(String nome) {
         return produtoRepository.findAll().stream()
-                .filter(p -> p.getNome()
-                        .toLowerCase()
-                        .contains(nome.toLowerCase()))
+                .filter(p -> p.getNome().toLowerCase().contains(nome.toLowerCase()))
                 .toList();
     }
 
     @Transactional
-    public Produto atualizar(Long id, String nome, String descricao, Integer quantidade) {
-
-        Produto produto = produtoRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Produto não encontrado: id " + id
-                ));
+    public Produto atualizar(Long id, String nome, String descricao, Integer quantidadeEstoque,
+                             Integer prazoProducaoDias, String observacoes) {
+        Produto produto = buscarPorId(id);
 
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
-
-        if (quantidade == null || quantidade < 0) {
-            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
-        }
-
         produto.setNome(nome);
         produto.setDescricao(descricao);
-        produto.setQuantidade(quantidade);
 
-        // Nota: valor não é recalculado aqui; se os materiais do produto mudarem,
-        // criar um método à parte (ex: recalcularValor) quando essa tela existir.
+        if (produto.getTipo() == TipoProduto.PRE_PRONTO) {
+            produto.setQuantidadeEstoque(quantidadeEstoque);
+        } else {
+            produto.setPrazoProducaoDias(prazoProducaoDias);
+            produto.setObservacoes(observacoes);
+        }
 
         return produtoRepository.save(produto);
     }

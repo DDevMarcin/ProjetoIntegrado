@@ -4,11 +4,6 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
-/**
- * Tabela associativa Produto_Material (N:N com atributo),
- * conforme o modelo relacional: cada produto usa N materiais,
- * cada um com uma quantidade utilizada específica.
- */
 @Entity
 @Table(name = "produto_material")
 @IdClass(ProdutoMaterialId.class)

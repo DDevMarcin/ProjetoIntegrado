@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.managementsystem.demo1.controller.CadastrarProdutoController">
+    <padding>
+        <Insets top="15" right="15" bottom="15" left="15"/>
+    </padding>
+
+    <Label text="Cadastro de Produto (Pré-pronto)" style="-fx-font-size: 18px; -fx-font-weight: bold;"/>
+
+    <Label text="Nome:"/>
+    <TextField fx:id="campoNome"/>
+
+    <Label text="Descrição:"/>
+    <TextField fx:id="campoDescricao"/>
+
+    <Label text="Quantidade em estoque:"/>
+    <TextField fx:id="campoQuantidade"/>
+
+    <Separator/>
+    <Label text="Materiais usados (o valor do produto é calculado a partir daqui):" style="-fx-font-weight: bold;"/>
+
+    <HBox spacing="8">
+        <ComboBox fx:id="comboMaterial" promptText="Selecione o material" prefWidth="260"/>
+        <TextField fx:id="campoQuantidadeMaterial" promptText="Qtd usada" prefWidth="100"/>
+        <Button text="Adicionar" onAction="#adicionarMaterial"/>
+    </HBox>
+
+    <ListView fx:id="listaMateriaisAdicionados" prefHeight="100"/>
+
+    <Button text="Salvar Produto" onAction="#salvar" style="-fx-font-weight: bold;"/>
+    <Label fx:id="labelStatus" style="-fx-text-fill: green;" wrapText="true"/>
+
+    <Separator/>
+    <Label text="Produtos cadastrados:" style="-fx-font-weight: bold;"/>
+    <ListView fx:id="listaProdutos" prefHeight="150"/>
+
+</VBox>

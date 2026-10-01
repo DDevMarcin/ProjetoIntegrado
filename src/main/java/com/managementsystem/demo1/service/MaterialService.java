@@ -35,12 +35,9 @@ public class MaterialService {
         if (material.getNome() == null || material.getNome().isBlank()) {
             throw new IllegalArgumentException("Nome do material é obrigatório.");
         }
-
-        if (material.getPrecoUnidade() == null
-                || material.getPrecoUnidade().compareTo(java.math.BigDecimal.ZERO) < 0) {
+        if (material.getPrecoUnidade() == null || material.getPrecoUnidade().signum() < 0) {
             throw new IllegalArgumentException("Preço do material inválido.");
         }
-
         if (material.getUnidadeMedida() == null || material.getUnidadeMedida().isBlank()) {
             throw new IllegalArgumentException("Unidade de medida é obrigatória.");
         }

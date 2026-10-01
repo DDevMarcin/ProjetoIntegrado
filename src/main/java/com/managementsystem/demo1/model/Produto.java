@@ -6,16 +6,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Representa o produto PRÉ-PRONTO do catálogo (RF07/CU-01).
- * Itens personalizados NÃO usam esta entidade — eles são criados
- * dentro de uma Encomenda, como especialização de Item_Encomenda
- * (ver DER: PERSONALIZADO é subtipo de ITEM_ENCOMENDA, não de PRODUTO).
- *
- * Nota: campo "quantidade" (estoque) presente no DER/modelo relacional,
- * mas ausente no diagrama de classes — mantido aqui pois é necessário
- * pro RF13 (Consultar Estoque). Vale alinhar com o grupo.
- */
 @Entity
 @Table(name = "produto")
 public class Produto {
@@ -30,24 +20,28 @@ public class Produto {
 
     private String descricao;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Integer quantidade;
+    private TipoProduto tipo;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal valor;
+    private BigDecimal valor; // calculado a partir dos materiais utilizados
+
+    // Usado se tipo = PRE_PRONTO
+    @Column(name = "quantidade_estoque")
+    private Integer quantidadeEstoque;
+
+    // Usado se tipo = PERSONALIZADO
+    @Column(name = "prazo_producao_dias")
+    private Integer prazoProducaoDias;
+
+    @Column(length = 500)
+    private String observacoes;
 
     @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProdutoMaterial> materiaisUtilizados = new ArrayList<>();
 
     public Produto() {
-    }
-
-    public List<ProdutoMaterial> getMateriaisUtilizados() {
-        return materiaisUtilizados;
-    }
-
-    public void setMateriaisUtilizados(List<ProdutoMaterial> materiaisUtilizados) {
-        this.materiaisUtilizados = materiaisUtilizados;
     }
 
     public Long getIdProduto() {
@@ -74,12 +68,12 @@ public class Produto {
         this.descricao = descricao;
     }
 
-    public Integer getQuantidade() {
-        return quantidade;
+    public TipoProduto getTipo() {
+        return tipo;
     }
 
-    public void setQuantidade(Integer quantidade) {
-        this.quantidade = quantidade;
+    public void setTipo(TipoProduto tipo) {
+        this.tipo = tipo;
     }
 
     public BigDecimal getValor() {
@@ -88,5 +82,37 @@ public class Produto {
 
     public void setValor(BigDecimal valor) {
         this.valor = valor;
+    }
+
+    public Integer getQuantidadeEstoque() {
+        return quantidadeEstoque;
+    }
+
+    public void setQuantidadeEstoque(Integer quantidadeEstoque) {
+        this.quantidadeEstoque = quantidadeEstoque;
+    }
+
+    public Integer getPrazoProducaoDias() {
+        return prazoProducaoDias;
+    }
+
+    public void setPrazoProducaoDias(Integer prazoProducaoDias) {
+        this.prazoProducaoDias = prazoProducaoDias;
+    }
+
+    public String getObservacoes() {
+        return observacoes;
+    }
+
+    public void setObservacoes(String observacoes) {
+        this.observacoes = observacoes;
+    }
+
+    public List<ProdutoMaterial> getMateriaisUtilizados() {
+        return materiaisUtilizados;
+    }
+
+    public void setMateriaisUtilizados(List<ProdutoMaterial> materiaisUtilizados) {
+        this.materiaisUtilizados = materiaisUtilizados;
     }
 }
