@@ -96,7 +96,7 @@ public class ProdutoRestController {
 
     // PUT /produtos/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody AtualizarProdutoDTO dto) {
+    public ResponseEntity<?> atualizar(@PathVariable("id") Long id, @RequestBody AtualizarProdutoDTO dto) {
         try {
             Produto produto = produtoService.atualizar(id, dto.codigo(), dto.nome(), dto.descricao(),
                     dto.quantidadeEstoque(), dto.prazoProducaoDias(), dto.observacoes());
@@ -110,7 +110,7 @@ public class ProdutoRestController {
 
     // DELETE /produtos/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> excluir(@PathVariable Long id) {
+    public ResponseEntity<?> excluir(@PathVariable("id") Long id) {
         produtoService.excluir(id);
         return ResponseEntity.noContent().build();
     }
