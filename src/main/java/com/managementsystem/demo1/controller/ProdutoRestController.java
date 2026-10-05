@@ -25,16 +25,20 @@ public class ProdutoRestController {
     public record MaterialUtilizadoDTO(Long idMaterial, BigDecimal quantidadeUtilizada) {}
 
     public record NovoProdutoDTO(
+            String codigo,
             String nome,
             String descricao,
             TipoProduto tipo,
             Integer quantidadeEstoque,      // usado se tipo = PRE_PRONTO
             Integer prazoProducaoDias,      // usado se tipo = PERSONALIZADO
             String observacoes,             // usado se tipo = PERSONALIZADO
-            List<MaterialUtilizadoDTO> materiais
+            boolean calcularManualmente,    // true = usa valorManual; false = calcula pelos materiais
+            BigDecimal valorManual,         // obrigatório se calcularManualmente = true
+            List<MaterialUtilizadoDTO> materiais  // obrigatório (não vazio) se calcularManualmente = false
     ) {}
 
     public record AtualizarProdutoDTO(
+            String codigo,
             String nome,
             String descricao,
             Integer quantidadeEstoque,
@@ -46,14 +50,15 @@ public class ProdutoRestController {
     @PostMapping
     public ResponseEntity<?> cadastrar(@RequestBody NovoProdutoDTO dto) {
         try {
-            List<ItemMaterialInput> itens = dto.materiais().stream()
-                    .map(m -> new ItemMaterialInput(m.idMaterial(), m.quantidadeUtilizada()))
-                    .toList();
+            List<ItemMaterialInput> itens = dto.materiais() == null ? List.of() :
+                    dto.materiais().stream()
+                            .map(m -> new ItemMaterialInput(m.idMaterial(), m.quantidadeUtilizada()))
+                            .toList();
 
             Produto produto = produtoService.cadastrarComMateriais(
-                    dto.nome(), dto.descricao(), dto.tipo(),
+                    dto.codigo(), dto.nome(), dto.descricao(), dto.tipo(),
                     dto.quantidadeEstoque(), dto.prazoProducaoDias(), dto.observacoes(),
-                    itens);
+                    dto.calcularManualmente(), dto.valorManual(), itens);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(produto);
         } catch (IllegalArgumentException e) {
@@ -77,6 +82,12 @@ public class ProdutoRestController {
         }
     }
 
+    // GET /produtos/total-estoque  (soma de quantidadeEstoque de todos os produtos)
+    @GetMapping("/total-estoque")
+    public Map<String, Integer> totalEmEstoque() {
+        return Map.of("total", produtoService.totalEmEstoque());
+    }
+
     // GET /produtos/buscar?nome=xxx
     @GetMapping("/buscar")
     public List<Produto> buscarPorNome(@RequestParam String nome) {
@@ -87,7 +98,7 @@ public class ProdutoRestController {
     @PutMapping("/{id}")
     public ResponseEntity<?> atualizar(@PathVariable Long id, @RequestBody AtualizarProdutoDTO dto) {
         try {
-            Produto produto = produtoService.atualizar(id, dto.nome(), dto.descricao(),
+            Produto produto = produtoService.atualizar(id, dto.codigo(), dto.nome(), dto.descricao(),
                     dto.quantidadeEstoque(), dto.prazoProducaoDias(), dto.observacoes());
             return ResponseEntity.ok(produto);
         } catch (IllegalArgumentException e) {

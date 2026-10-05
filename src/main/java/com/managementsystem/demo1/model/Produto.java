@@ -6,6 +6,9 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Produto: cobre tanto PRE_PRONTO quanto PERSONALIZADO.
+ */
 @Entity
 @Table(name = "produto")
 public class Produto {
@@ -14,6 +17,9 @@ public class Produto {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_produto")
     private Long idProduto;
+
+    @Column(nullable = false, unique = true, length = 50)
+    private String codigo;
 
     @Column(nullable = false)
     private String nome;
@@ -25,7 +31,12 @@ public class Produto {
     private TipoProduto tipo;
 
     @Column(nullable = false, precision = 10, scale = 2)
-    private BigDecimal valor; // calculado a partir dos materiais utilizados
+    private BigDecimal valor;
+
+    // true = artesã digitou o valor na mão (campo "Calcular manualmente" do protótipo)
+    // false = valor calculado automaticamente a partir dos materiais
+    @Column(name = "valor_manual", nullable = false)
+    private Boolean valorManual = false;
 
     // Usado se tipo = PRE_PRONTO
     @Column(name = "quantidade_estoque")
@@ -50,6 +61,22 @@ public class Produto {
 
     public void setIdProduto(Long idProduto) {
         this.idProduto = idProduto;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
+    }
+
+    public Boolean getValorManual() {
+        return valorManual;
+    }
+
+    public void setValorManual(Boolean valorManual) {
+        this.valorManual = valorManual;
     }
 
     public String getNome() {
