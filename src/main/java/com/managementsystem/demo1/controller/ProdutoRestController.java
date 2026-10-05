@@ -74,7 +74,7 @@ public class ProdutoRestController {
 
     // GET /produtos/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id) {
         try {
             return ResponseEntity.ok(produtoService.buscarPorId(id));
         } catch (Exception e) {
