@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.CadastrarProdutoController">
+
+    <content>
+
+        <VBox spacing="10">
+
+            <padding>
+                <Insets top="20"
+                        right="20"
+                        bottom="20"
+                        left="20"/>
+            </padding>
+
+            <Label text="Cadastro de Produto"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+            <Separator/>
+
+            <Label text="Código:"/>
+            <TextField fx:id="campoCodigo"/>
+
+            <Label text="Nome:"/>
+            <TextField fx:id="campoNome"/>
+
+            <Label text="Descrição:"/>
+            <TextArea fx:id="campoDescricao"
+                      prefRowCount="3"/>
+
+            <Label text="Tipo do produto:"/>
+            <ComboBox fx:id="comboTipo"
+                      prefWidth="250"/>
+
+            <Label text="Quantidade em estoque:"/>
+            <TextField fx:id="campoQuantidade"/>
+
+            <Label text="Prazo de produção (dias):"/>
+            <TextField fx:id="campoPrazoProducao"/>
+
+            <Label text="Observações:"/>
+            <TextArea fx:id="campoObservacoes"
+                      prefRowCount="3"/>
+
+            <Separator/>
+
+            <Label text="Preço de venda:"
+                   style="-fx-font-weight: bold;"/>
+
+            <CheckBox fx:id="checkValorManual"
+                      text="Calcular manualmente"
+                      onAction="#atualizarCampoValorManual"/>
+
+            <TextField fx:id="campoValorManual"
+                       promptText="Ex.: 50,00"
+                       disable="true"/>
+
+            <Separator/>
+
+            <Label text="Materiais utilizados:"
+                   style="-fx-font-weight: bold;"/>
+
+            <HBox spacing="8">
+
+                <ComboBox fx:id="comboMaterial"
+                          promptText="Selecione o material"
+                          prefWidth="280"/>
+
+                <TextField fx:id="campoQuantidadeMaterial"
+                           promptText="Quantidade"
+                           prefWidth="100"/>
+
+                <Button text="Adicionar"
+                        onAction="#adicionarMaterial"/>
+
+            </HBox>
+
+            <ListView fx:id="listaMateriaisAdicionados"
+                      prefHeight="120"/>
+
+            <Separator/>
+
+            <HBox spacing="10">
+
+                <Button text="Salvar Produto"
+                        onAction="#salvar"/>
+
+                <Button text="Limpar"
+                        onAction="#limpar"/>
+
+                <Button text="Listar Produtos"
+                        onAction="#listar"/>
+
+            </HBox>
+
+            <Label fx:id="labelStatus"
+                   wrapText="true"/>
+
+            <Separator/>
+
+            <Label text="Produtos cadastrados:"
+                   style="-fx-font-weight: bold;"/>
+
+            <ListView fx:id="listaProdutos"
+                      prefHeight="200"/>
+
+        </VBox>
+
+    </content>
+
+</ScrollPane>
