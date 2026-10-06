@@ -90,7 +90,7 @@ public class ProdutoRestController {
 
     // GET /produtos/buscar?nome=xxx
     @GetMapping("/buscar")
-    public List<Produto> buscarPorNome(@RequestParam String nome) {
+    public List<Produto> buscarPorNome(@RequestParam("nome") String nome) {
         return produtoService.buscarPorNome(nome);
     }
 
