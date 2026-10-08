@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.image.ImageView?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.MainLayoutController"
+            prefWidth="1024"
+            prefHeight="660"
+            style="-fx-background-color: #FFF0F5;">
+
+    <!-- ===== SIDEBAR ===== -->
+    <left>
+        <VBox fx:id="sidebar"
+              prefWidth="300"
+              minWidth="300"
+              spacing="0"
+              style="-fx-background-color: #FFE6EF; -fx-border-color: transparent #8F031E transparent transparent; -fx-border-width: 0 1.5 0 0;">
+
+            <!-- Área do logo -->
+            <VBox alignment="CENTER"
+                  style="-fx-padding: 24 16 20 16;">
+                <ImageView fx:id="logoImageView"
+                           fitWidth="219"
+                           fitHeight="217"
+                           preserveRatio="true"
+                           pickOnBounds="true"/>
+            </VBox>
+
+            <!-- Itens de navegação -->
+            <VBox fx:id="navContainer"
+                  spacing="4"
+                  style="-fx-padding: 0 12 0 12;">
+
+                <Button fx:id="btnDashboard"
+                        text="Dashboard"
+                        maxWidth="Infinity"
+                        onAction="#navDashboard"
+                        styleClass="nav-item"/>
+
+                <Button fx:id="btnProdutos"
+                        text="Produtos"
+                        maxWidth="Infinity"
+                        onAction="#navProdutos"
+                        styleClass="nav-item"/>
+
+                <Button fx:id="btnEncomendas"
+                        text="Encomendas"
+                        maxWidth="Infinity"
+                        onAction="#navEncomendas"
+                        styleClass="nav-item"/>
+
+                <Button fx:id="btnEstoque"
+                        text="Estoque"
+                        maxWidth="Infinity"
+                        onAction="#navEstoque"
+                        styleClass="nav-item"/>
+
+                <Button fx:id="btnFinanceiro"
+                        text="Financeiro"
+                        maxWidth="Infinity"
+                        onAction="#navFinanceiro"
+                        styleClass="nav-item"/>
+
+            </VBox>
+
+        </VBox>
+    </left>
+
+    <!-- ===== ÁREA DE CONTEÚDO ===== -->
+    <center>
+        <StackPane fx:id="contentArea"
+                   style="-fx-background-color: #FFF8FB;"/>
+    </center>
+
+</BorderPane>

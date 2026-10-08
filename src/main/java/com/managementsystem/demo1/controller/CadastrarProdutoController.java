@@ -10,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Scope("prototype")
 public class CadastrarProdutoController {
 
     @FXML
@@ -347,7 +349,7 @@ public class CadastrarProdutoController {
                     );
 
             labelStatus.setText(
-                    "Produto salvo com sucesso! "
+                    "PRODUTO SALVO! "
                             + "Valor: R$ "
                             + produto.getValor()
             );

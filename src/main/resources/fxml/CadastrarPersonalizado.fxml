@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.CadastrarPersonalizadoController"
+            style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="32" right="32" bottom="24" left="32"/>
+    </padding>
+
+    <!-- ── TOP: título + subtítulo + botão voltar ── -->
+    <top>
+        <VBox spacing="4" style="-fx-padding: 0 0 20 0;">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Button text="&#8592; Voltar"
+                        onAction="#voltar"
+                        styleClass="btn-voltar"/>
+                <VBox spacing="2">
+                    <Label text="Cadastrar Produto Personalizado"
+                           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+                    <Label text="Produto feito sob encomenda — preencha as informações abaixo"
+                           style="-fx-font-size: 13px; -fx-text-fill: #999;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ── CENTER: formulário (esq) + preview (dir) ── -->
+    <center>
+        <HBox spacing="24">
+
+            <!-- ════ PAINEL ESQUERDO: formulário ════ -->
+            <ScrollPane fitToWidth="true"
+                        HBox.hgrow="ALWAYS"
+                        styleClass="form-scroll">
+                <content>
+                    <VBox spacing="16" style="-fx-padding: 28; -fx-background-color: white;
+                                              -fx-background-radius: 12; -fx-border-color: #f0d0da;
+                                              -fx-border-radius: 12; -fx-border-width: 1;">
+
+                        <!-- Código -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Código do Produto *"/>
+                            <TextField fx:id="campoCodigo"
+                                       promptText="Ex.: PC-001"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Nome -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Nome do Produto *"/>
+                            <TextField fx:id="campoNome"
+                                       promptText="Ex.: Terço Personalizado com Nome"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Descrição -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Detalhe do Produto"/>
+                            <TextArea fx:id="campoDescricao"
+                                      promptText="Descreva o produto: materiais, tamanho, características..."
+                                      prefRowCount="4"
+                                      wrapText="true"
+                                      styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Prazo de produção -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Prazo de Produção (dias)"/>
+                            <TextField fx:id="campoPrazo"
+                                       promptText="Ex.: 7"
+                                       styleClass="form-field"
+                                       prefWidth="160"/>
+                        </VBox>
+
+                        <!-- Observações -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Observações"/>
+                            <TextArea fx:id="campoObservacoes"
+                                      promptText="Ex.: Disponível em cores variadas, aceita gravação de nome..."
+                                      prefRowCount="3"
+                                      wrapText="true"
+                                      styleClass="form-field"/>
+                        </VBox>
+
+                        <Separator/>
+
+                        <!-- Preço -->
+                        <VBox spacing="10">
+                            <Label text="Preço de Venda"
+                                   style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+
+                            <HBox spacing="24">
+                                <RadioButton fx:id="rbPrecoMateriais"
+                                             text="Calcular pelos materiais"
+                                             styleClass="form-radio"/>
+                                <RadioButton fx:id="rbPrecoManual"
+                                             text="Valor manual"
+                                             styleClass="form-radio"/>
+                            </HBox>
+
+                            <VBox spacing="6">
+                                <Label styleClass="form-label" text="Valor manual (R$)"/>
+                                <TextField fx:id="campoValorManual"
+                                           promptText="Ex.: 45,00"
+                                           styleClass="form-field"
+                                           prefWidth="160"/>
+                            </VBox>
+                        </VBox>
+
+                        <Separator/>
+
+                        <!-- Materiais -->
+                        <VBox fx:id="secaoMateriais" spacing="10">
+                            <Label text="Materiais Utilizados"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <ComboBox fx:id="comboMaterial"
+                                          promptText="Selecione o material"
+                                          prefWidth="260"
+                                          styleClass="form-field"/>
+                                <TextField fx:id="campoQtdMaterial"
+                                           promptText="Qtd."
+                                           prefWidth="80"
+                                           styleClass="form-field"/>
+                                <Button text="+ Adicionar"
+                                        onAction="#adicionarMaterial"
+                                        styleClass="btn-adicionar"/>
+                            </HBox>
+
+                            <FlowPane fx:id="listaMateriais" hgap="8" vgap="8"
+                                      style="-fx-padding: 4 0 0 0;"/>
+                        </VBox>
+
+                        <!-- Status / feedback -->
+                        <Label fx:id="labelStatus" wrapText="true"
+                               style="-fx-font-size: 12px;"/>
+
+                        <!-- Botões finais -->
+                        <HBox spacing="12" alignment="CENTER_RIGHT"
+                              style="-fx-padding: 8 0 0 0;">
+                            <Button text="Limpar"
+                                    onAction="#limpar"
+                                    styleClass="btn-voltar"/>
+                            <Button text="&#10003;  Cadastrar Produto"
+                                    onAction="#salvar"
+                                    styleClass="btn-salvar"/>
+                        </HBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+            <!-- ════ PAINEL DIREITO: preview ════ -->
+            <VBox spacing="16"
+                  prefWidth="320" minWidth="300" maxWidth="340"
+                  style="-fx-background-color: #FFF0F5; -fx-background-radius: 12;
+                         -fx-border-color: #f0d0da; -fx-border-radius: 12;
+                         -fx-border-width: 1; -fx-padding: 20;">
+
+                <!-- Nome + código -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="previewNome"
+                           text="Nome do produto"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #D31946;"
+                           wrapText="true"
+                           HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="previewCodigo"
+                           text="—"
+                           styleClass="detalhe-codigo-badge"/>
+                </HBox>
+
+                <Separator/>
+
+                <!-- Valor -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Valor:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewValor" text="R$ —" styleClass="detalhe-valor"/>
+                </HBox>
+
+                <!-- Prazo -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Prazo:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewPrazo" text="—" styleClass="detalhe-info-valor"/>
+                </HBox>
+
+                <Separator/>
+
+                <!-- Descrição -->
+                <VBox spacing="4">
+                    <Label text="Descricao" styleClass="detalhe-secao-titulo"/>
+                    <Label fx:id="previewDescricao"
+                           text="Sem descricao."
+                           wrapText="true"
+                           styleClass="detalhe-secao-texto"/>
+                </VBox>
+
+                <!-- Observações -->
+                <VBox spacing="4">
+                    <Label text="Observacoes" styleClass="detalhe-secao-titulo"/>
+                    <Label fx:id="previewObservacoes"
+                           text="—"
+                           wrapText="true"
+                           styleClass="detalhe-secao-texto"/>
+                </VBox>
+
+                <Separator/>
+
+                <!-- Materiais -->
+                <VBox spacing="8">
+                    <Label text="Materiais utilizados" styleClass="detalhe-secao-titulo"/>
+                    <FlowPane fx:id="previewMateriais" hgap="8" vgap="8"/>
+                </VBox>
+
+                <!-- Tipo fixo -->
+                <Region VBox.vgrow="ALWAYS"/>
+                <HBox alignment="CENTER">
+                    <Label text="Produto Personalizado"
+                           style="-fx-background-color: #FFC1D6; -fx-background-radius: 20;
+                                  -fx-text-fill: #8F031E; -fx-font-size: 11px;
+                                  -fx-font-weight: bold; -fx-padding: 4 14 4 14;"/>
+                </HBox>
+
+            </VBox>
+
+        </HBox>
+    </center>
+
+</BorderPane>

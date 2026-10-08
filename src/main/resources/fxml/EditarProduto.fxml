@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.EditarProdutoController"
+            style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="32" right="32" bottom="24" left="32"/>
+    </padding>
+
+    <!-- ── TOP: título + botão voltar ── -->
+    <top>
+        <VBox spacing="4" style="-fx-padding: 0 0 20 0;">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Button text="&#8592; Voltar"
+                        onAction="#voltar"
+                        styleClass="btn-voltar"/>
+                <VBox spacing="2">
+                    <Label fx:id="labelTitulo"
+                           text="Editar Produto"
+                           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+                    <Label text="Atualize os campos abaixo"
+                           style="-fx-font-size: 13px; -fx-text-fill: #999;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ── CENTER: formulário centralizado ── -->
+    <center>
+        <HBox alignment="CENTER">
+            <ScrollPane fitToWidth="true"
+                        maxWidth="600"
+                        styleClass="form-scroll">
+                <content>
+                    <VBox spacing="16" style="-fx-padding: 28; -fx-background-color: white;
+                                              -fx-background-radius: 12; -fx-border-color: #f0d0da;
+                                              -fx-border-radius: 12; -fx-border-width: 1;">
+
+                        <!-- Aviso de limitação -->
+                        <HBox spacing="8" alignment="CENTER_LEFT"
+                              style="-fx-background-color: #fff3cd; -fx-background-radius: 8;
+                                     -fx-border-color: #ffc107; -fx-border-radius: 8;
+                                     -fx-border-width: 1; -fx-padding: 12;">
+                            <Label text="⚠️" style="-fx-font-size: 16px;"/>
+                            <Label fx:id="labelLimitacao"
+                                   text="Valor e materiais não podem ser alterados."
+                                   wrapText="true"
+                                   style="-fx-font-size: 17px; -fx-text-fill: #856404;"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <!-- Código -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Código do Produto *"/>
+                            <TextField fx:id="campoCodigo"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Nome -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Nome do Produto *"/>
+                            <TextField fx:id="campoNome"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Descrição -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Descrição"/>
+                            <TextArea fx:id="campoDescricao"
+                                      prefRowCount="4"
+                                      wrapText="true"
+                                      styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Quantidade em estoque (PRE_PRONTO) -->
+                        <VBox fx:id="vboxQuantidade" spacing="6">
+                            <Label fx:id="labelQuantidade"
+                                   styleClass="form-label-required"
+                                   text="Quantidade em Estoque *"/>
+                            <TextField fx:id="campoQuantidade"
+                                       styleClass="form-field"
+                                       prefWidth="160"/>
+                        </VBox>
+
+                        <!-- Prazo de produção (PERSONALIZADO) -->
+                        <VBox fx:id="vboxPrazo" spacing="6">
+                            <Label fx:id="labelPrazo"
+                                   styleClass="form-label"
+                                   text="Prazo de Produção (dias)"/>
+                            <TextField fx:id="campoPrazo"
+                                       styleClass="form-field"
+                                       prefWidth="160"/>
+                        </VBox>
+
+                        <!-- Observações (PERSONALIZADO) -->
+                        <VBox fx:id="vboxObservacoes" spacing="6">
+                            <Label fx:id="labelObservacoes"
+                                   styleClass="form-label"
+                                   text="Observações"/>
+                            <TextArea fx:id="campoObservacoes"
+                                      prefRowCount="3"
+                                      wrapText="true"
+                                      styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Status / feedback -->
+                        <Label fx:id="labelStatus"
+                               wrapText="true"
+                               style="-fx-font-size: 13px;"/>
+
+                        <!-- Botões finais -->
+                        <HBox spacing="12" alignment="CENTER_RIGHT"
+                              style="-fx-padding: 8 0 0 0;">
+                            <Button text="Cancelar"
+                                    onAction="#voltar"
+                                    styleClass="btn-voltar"/>
+                            <Button text="&#10003;  Salvar Alterações"
+                                    onAction="#salvar"
+                                    styleClass="btn-salvar"/>
+                        </HBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </HBox>
+    </center>
+
+</BorderPane>

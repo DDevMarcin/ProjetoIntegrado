@@ -27,13 +27,23 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cadastro-produto.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainLayout.fxml"));
         loader.setControllerFactory(springContext::getBean);
 
         Parent root = loader.load();
 
-        stage.setTitle("Gestão de Produtos - Artesã");
-        stage.setScene(new Scene(root, 650, 600));
+        Scene scene = new Scene(root, 1024, 660);
+
+        // Aplica o CSS global
+        var css = getClass().getResource("/css/app.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
+
+        stage.setTitle("Gestão - Artesã");
+        stage.setScene(scene);
+        stage.setMinWidth(1440);
+        stage.setMinHeight(900);
         stage.show();
     }
 

@@ -1,0 +1,480 @@
+/*
+   APP.CSS — Estilos globais do sistema Artesã
+
+   Paleta da sidebar:
+     Fundo sidebar:          #FFE6EF
+     Borda direita:          #8F031E
+     Botão ativo (fundo):    #FFC1D6
+     Botão ativo (texto):    #D31946
+     Botão inativo (texto):  #000000
+*/
+
+
+/* SIDEBAR */
+
+.nav-item {
+    -fx-background-color: transparent;
+    -fx-background-radius: 8;
+    -fx-border-color: transparent;
+    -fx-border-radius: 8;
+    -fx-text-fill: #000000;
+    -fx-font-size: 28px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER-LEFT;
+    -fx-padding: 12 16 12 16;
+    -fx-cursor: hand;
+}
+
+.nav-item:hover {
+    -fx-background-color: #FFC1D6;
+    -fx-text-fill: #D31946;
+}
+
+.nav-item-active {
+    -fx-background-color: #FFC1D6;
+    -fx-text-fill: #D31946;
+}
+
+.nav-item-active:hover {
+    -fx-background-color: #ffadc8;
+    -fx-text-fill: #D31946;
+}
+
+
+/* TELA DE PRODUTOS — Barra de busca */
+
+.busca-field {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-color: #e0c0cc;
+    -fx-border-radius: 10;
+    -fx-border-width: 1;
+    -fx-padding: 8 14 8 14;
+    -fx-font-size: 17px;
+    -fx-text-fill: #333;
+    -fx-prompt-text-fill: #aaa;
+}
+
+.busca-field:focused {
+    -fx-border-color: #D31946;
+}
+
+
+/* TELA DE PRODUTOS — Botões criar */
+
+.btn-criar {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 10;
+    -fx-text-fill: #D31946;
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20 8 20;
+    -fx-cursor: hand;
+    -fx-border-color: transparent;
+}
+
+.btn-criar:hover {
+    -fx-background-color: #ffafca;
+}
+
+/* TELA DE PRODUTOS — Card da tabela */
+
+.card-tabela {
+    -fx-background-color: #FFE6EF;
+    -fx-background-radius: 12;
+    -fx-border-color: #f0d0da;
+    -fx-border-radius: 12;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);
+}
+
+.card-titulo {
+    -fx-font-size: 19px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+    -fx-padding: 16 20 12 20;
+    -fx-background-color: #FFE6EF;
+}
+
+
+/* TELA DE PRODUTOS — TableView */
+
+.tabela-produtos {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 0 8 0 8;
+}
+
+/* Cabeçalho das colunas */
+.tabela-produtos .column-header-background {
+    -fx-background-color: transparent;
+}
+
+.tabela-produtos .column-header {
+    -fx-background-color: #FFE6EF;
+    -fx-border-color: transparent transparent #f0d0da transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.tabela-produtos .column-header .label {
+    -fx-text-fill: #D31946;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-alignment: CENTER-LEFT;
+    -fx-padding: 16 20 12 20;
+}
+
+/* Linhas */
+.tabela-produtos .table-row-cell {
+    -fx-background-color: white;
+    -fx-border-color: transparent transparent #fce4ec transparent;
+    -fx-border-width: 0 0 1 0;
+    -fx-table-cell-border-color: transparent;
+}
+
+.tabela-produtos .table-row-cell:hover {
+    -fx-background-color: #fff0f5;
+}
+
+.tabela-produtos .table-row-cell:selected {
+    -fx-background-color: #FFC1D6;
+}
+
+.tabela-produtos .table-cell {
+    -fx-text-fill: #222;
+    -fx-font-size: 17px;
+    -fx-padding: 16 20 12 20;
+    -fx-border-color: transparent;
+}
+
+/* Remove a linha de foco azul padrão do JavaFX */
+.tabela-produtos:focused {
+    -fx-background-color: transparent;
+}
+
+.tabela-produtos .table-row-cell:selected .table-cell {
+    -fx-text-fill: #222;
+}
+
+/* Esconde a coluna vazia extra que o JavaFX adiciona */
+.tabela-produtos .filler {
+    -fx-background-color: transparent;
+}
+
+
+/* TELA DE PRODUTOS — Rodapé de paginação */
+
+.rodape-tabela {
+    -fx-background-color: white;
+    -fx-background-radius: 0 0 12 12;
+    -fx-border-color: #f0d0da transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 12 20 12 20;
+}
+
+.rodape-label-total {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+.rodape-label-pagina {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+.btn-pagina {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: #D31946;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+    -fx-padding: 0 6 0 6;
+}
+
+.btn-pagina:hover {
+    -fx-text-fill: #8F031E;
+}
+
+.btn-pagina:disabled {
+    -fx-text-fill: #ccc;
+}
+
+
+/* ════════════════════════════════════════════
+   PAINEL DE DETALHES DO PRODUTO
+   ════════════════════════════════════════════ */
+
+.painel-detalhes-scroll {
+    -fx-background-color: #FFF0F5;
+    -fx-background: #FFF0F5;
+    -fx-border-color: #f0d0da;
+    -fx-border-radius: 12;
+    -fx-background-radius: 12;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.07), 8, 0, 0, 2);
+}
+
+/* Remove o fundo cinza padrão do ScrollPane */
+.painel-detalhes-scroll .viewport {
+    -fx-background-color: #FFF0F5;
+}
+
+/* Nome do produto */
+.detalhe-nome {
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+/* Badge do código — quadradinho rosado */
+.detalhe-codigo-badge {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 8;
+    -fx-text-fill: #8F031E;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 10 4 10;
+}
+
+/* Valor em destaque */
+.detalhe-valor {
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+/* Linha de info (estoque, tipo) */
+.detalhe-info-label {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+.detalhe-info-valor {
+    -fx-font-size: 17px;
+    -fx-text-fill: #333;
+}
+
+/* Cards de stats (Total vendido / Valor total) */
+.detalhe-stat-card {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #f0d0da;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 10 14 10 14;
+    -fx-spacing: 4;
+}
+
+.detalhe-stat-titulo {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+.detalhe-stat-valor {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1a1a2e;
+}
+
+/* Seções (Descrição, Materiais) */
+.detalhe-secao {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #f0d0da;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 12;
+}
+
+.detalhe-secao-titulo {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+.detalhe-secao-texto {
+    -fx-font-size: 17px;
+    -fx-text-fill: #444;
+}
+
+/* Tags de materiais */
+.material-tag {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 20;
+    -fx-text-fill: #8F031E;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 12 4 12;
+}
+
+/* Botão Deletar */
+.btn-deletar {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-color: #D31946;
+    -fx-border-radius: 20;
+    -fx-border-width: 1.5;
+    -fx-text-fill: #D31946;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20 8 20;
+    -fx-cursor: hand;
+}
+
+.btn-deletar:hover {
+    -fx-background-color: #fff0f5;
+}
+
+/* Botão Editar Dados */
+.btn-editar {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 20;
+    -fx-border-color: transparent;
+    -fx-text-fill: #8F031E;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20 8 20;
+    -fx-cursor: hand;
+}
+
+.btn-editar:hover {
+    -fx-background-color: #D31946;
+    -fx-text-fill: white;
+}
+
+
+/* ════════════════════════════════════════════
+   FORMULÁRIO DE CADASTRO
+   ════════════════════════════════════════════ */
+
+/* ScrollPane do formulário — remove fundo cinza */
+.form-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
+    -fx-border-color: transparent;
+}
+
+.form-scroll .viewport {
+    -fx-background-color: transparent;
+}
+
+/* Labels obrigatórios (com *) */
+.form-label-required {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #D31946;
+}
+
+/* Labels opcionais */
+.form-label {
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #555;
+}
+
+/* Campos de texto e TextArea */
+.form-field {
+    -fx-background-color: white;
+    -fx-background-radius: 8;
+    -fx-border-color: #e0c0cc;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-padding: 9 12 9 12;
+    -fx-font-size: 17px;
+    -fx-text-fill: #222;
+    -fx-prompt-text-fill: #bbb;
+}
+
+.form-field:focused {
+    -fx-border-color: #D31946;
+    -fx-background-color: #fffafc;
+}
+
+/* ComboBox no formulário */
+.form-field .combo-box-base {
+    -fx-background-color: white;
+    -fx-border-color: #e0c0cc;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+}
+
+/* RadioButtons */
+.form-radio {
+    -fx-font-size: 17px;
+    -fx-text-fill: #333;
+    -fx-cursor: hand;
+}
+
+.form-radio:selected {
+    -fx-text-fill: #D31946;
+}
+
+/* Botão "+ Adicionar" material */
+.btn-adicionar {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 20;
+    -fx-border-color: transparent;
+    -fx-text-fill: #8F031E;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 16 8 16;
+    -fx-cursor: hand;
+}
+
+.btn-adicionar:hover {
+    -fx-background-color: #D31946;
+    -fx-text-fill: white;
+}
+
+/* Tag de material com botão remover */
+.material-tag-removivel {
+    -fx-background-color: #FFC1D6;
+    -fx-background-radius: 20;
+    -fx-padding: 4 10 4 12;
+    -fx-alignment: CENTER-LEFT;
+    -fx-cursor: default;
+}
+
+/* Botão Voltar / Limpar — outline neutro */
+.btn-voltar {
+    -fx-background-color: white;
+    -fx-background-radius: 20;
+    -fx-border-color: #ccc;
+    -fx-border-radius: 20;
+    -fx-border-width: 1.5;
+    -fx-text-fill: #555;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 20 8 20;
+    -fx-cursor: hand;
+}
+
+.btn-voltar:hover {
+    -fx-border-color: #D31946;
+    -fx-text-fill: #D31946;
+}
+
+/* Botão principal de salvar */
+.btn-salvar {
+    -fx-background-color: #D31946;
+    -fx-background-radius: 20;
+    -fx-border-color: transparent;
+    -fx-text-fill: white;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-padding: 8 24 8 24;
+    -fx-cursor: hand;
+}
+
+.btn-salvar:hover {
+    -fx-background-color: #8F031E;
+}
+
+.btn-salvar:pressed {
+    -fx-background-color: #6a0115;
+}

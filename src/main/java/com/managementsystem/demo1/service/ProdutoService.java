@@ -43,6 +43,14 @@ public class ProdutoService {
         if (codigo == null || codigo.isBlank()) {
             throw new IllegalArgumentException("Código do produto é obrigatório.");
         }
+        
+        // Verifica se o código já existe
+        produtoRepository.findByCodigo(codigo).ifPresent(produtoExistente -> {
+            throw new IllegalArgumentException(
+                "O código \"" + codigo + "\" já pertence ao produto \"" + produtoExistente.getNome() + "\"."
+            );
+        });
+        
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
@@ -93,17 +101,20 @@ public class ProdutoService {
         return produtoRepository.save(produto);
     }
 
+    @Transactional(readOnly = true)
     public List<Produto> listarTodos() {
-        return produtoRepository.findAll();
+        return produtoRepository.findAllWithMateriais();
     }
 
+    @Transactional(readOnly = true)
     public Produto buscarPorId(Long id) {
-        return produtoRepository.findById(id)
+        return produtoRepository.findByIdWithMateriais(id)
                 .orElseThrow(() -> new NoSuchElementException("Produto não encontrado: id " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<Produto> buscarPorNome(String nome) {
-        return produtoRepository.findAll().stream()
+        return produtoRepository.findAllWithMateriais().stream()
                 .filter(p -> p.getNome().toLowerCase().contains(nome.toLowerCase()))
                 .toList();
     }
@@ -125,6 +136,14 @@ public class ProdutoService {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
         if (codigo != null && !codigo.isBlank()) {
+            // Verifica duplicidade de código, ignorando o próprio produto
+            produtoRepository.findByCodigo(codigo).ifPresent(existente -> {
+                if (!existente.getIdProduto().equals(id)) {
+                    throw new IllegalArgumentException(
+                        "O código \"" + codigo + "\" já pertence ao produto \"" + existente.getNome() + "\"."
+                    );
+                }
+            });
             produto.setCodigo(codigo);
         }
         produto.setNome(nome);
