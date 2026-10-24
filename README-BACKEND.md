@@ -57,11 +57,13 @@ A tabela produto_material representa a associação entre produtos e materiais.
 
 # 4. API de Materiais
 
-A API de materiais possui atualmente três operações:
+A API de materiais possui as seguintes operações:
 
 ```text
 POST /materiais
 GET  /materiais
+GET  /materiais?nome=...&unidadeMedida=...
+GET  /materiais/buscar?nome=...
 GET  /materiais/{id}
 ```
 
@@ -140,6 +142,51 @@ Se o material não existir, o backend retorna:
 
 ```text
 404 Not Found
+```
+
+# 6.1 Buscar Material por Nome
+
+Endpoint:
+
+```text
+GET /materiais/buscar?nome=madeira
+```
+
+Ou através do parâmetro opcional na listagem:
+
+```text
+GET /materiais?nome=madeira
+```
+
+O backend procura materiais cujo nome contenha o texto informado (insensível a maiúsculas/minúsculas).
+
+Exemplo de resposta:
+
+```json
+[
+  {
+    "idMaterial": 1,
+    "nome": "Contas de madeira",
+    "precoUnidade": 0.5,
+    "unidadeMedida": "un"
+  }
+]
+```
+
+Caso não haja materiais correspondentes, o retorno é uma lista vazia (`[]`) com status `200 OK`.
+
+# 6.2 Filtrar por Unidade de Medida
+
+Endpoint:
+
+```text
+GET /materiais?unidadeMedida=un
+```
+
+Também é possível combinar filtros:
+
+```text
+GET /materiais?nome=contas&unidadeMedida=un
 ```
 
 # 7. Validações de Material

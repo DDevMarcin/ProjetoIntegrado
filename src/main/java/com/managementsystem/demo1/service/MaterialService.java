@@ -28,7 +28,34 @@ public class MaterialService {
     }
 
     public Optional<Material> buscarPorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
         return materialRepository.findById(id);
+    }
+
+    public List<Material> buscarPorNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return listarTodos();
+        }
+        return materialRepository.findByNomeContainingIgnoreCase(nome.trim());
+    }
+
+    public List<Material> consultar(String nome, String unidadeMedida) {
+        boolean temNome = nome != null && !nome.isBlank();
+        boolean temUnidade = unidadeMedida != null && !unidadeMedida.isBlank();
+
+        if (temNome && temUnidade) {
+            return materialRepository.findByNomeContainingIgnoreCaseAndUnidadeMedidaIgnoreCase(
+                    nome.trim(), unidadeMedida.trim()
+            );
+        } else if (temNome) {
+            return materialRepository.findByNomeContainingIgnoreCase(nome.trim());
+        } else if (temUnidade) {
+            return materialRepository.findByUnidadeMedidaIgnoreCase(unidadeMedida.trim());
+        } else {
+            return listarTodos();
+        }
     }
 
     private void validar(Material material) {
