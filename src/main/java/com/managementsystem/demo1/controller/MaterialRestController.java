@@ -38,15 +38,27 @@ public class MaterialRestController {
         }
     }
 
-    // GET /materiais
+    // GET /materiais (suporta listagem total ou filtros opcionais por nome e unidadeMedida)
     @GetMapping
-    public List<Material> listar() {
+    public List<Material> listar(
+            @RequestParam(value = "nome", required = false) String nome,
+            @RequestParam(value = "unidadeMedida", required = false) String unidadeMedida
+    ) {
+        if ((nome != null && !nome.isBlank()) || (unidadeMedida != null && !unidadeMedida.isBlank())) {
+            return materialService.consultar(nome, unidadeMedida);
+        }
         return materialService.listarTodos();
+    }
+
+    // GET /materiais/buscar?nome=xxx
+    @GetMapping("/buscar")
+    public List<Material> buscarPorNome(@RequestParam("nome") String nome) {
+        return materialService.buscarPorNome(nome);
     }
 
     // GET /materiais/{id}
     @GetMapping("/{id}")
-    public ResponseEntity<?> buscarPorId(@PathVariable Long id) {
+    public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id) {
         return materialService.buscarPorId(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

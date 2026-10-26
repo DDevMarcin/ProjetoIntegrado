@@ -6,7 +6,9 @@ import com.managementsystem.demo1.model.Produto;
 import com.managementsystem.demo1.model.ProdutoMaterial;
 import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.repository.MaterialRepository;
+import com.managementsystem.demo1.repository.ProdutoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +30,16 @@ class ProdutoServiceTest {
 
     @Autowired
     private ProdutoRepository produtoRepository;
+
+    @Autowired
+    private ProdutoMaterialRepository produtoMaterialRepository;
+
+    @BeforeEach
+    void setUp() {
+        produtoMaterialRepository.deleteAll();
+        produtoRepository.deleteAll();
+        materialRepository.deleteAll();
+    }
 
     @Test
     void deveCadastrarProdutoComMaterial() {
