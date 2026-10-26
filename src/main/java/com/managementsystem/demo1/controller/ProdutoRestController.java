@@ -66,9 +66,12 @@ public class ProdutoRestController {
         }
     }
 
-    // GET /produtos
+    // GET /produtos (suporta listagem total ou filtro opcional por nome)
     @GetMapping
-    public List<Produto> listar() {
+    public List<Produto> listar(@RequestParam(value = "nome", required = false) String nome) {
+        if (nome != null && !nome.isBlank()) {
+            return produtoService.buscarPorNome(nome);
+        }
         return produtoService.listarTodos();
     }
 

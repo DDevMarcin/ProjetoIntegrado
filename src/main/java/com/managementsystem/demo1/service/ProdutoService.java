@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 @Service
 public class ProdutoService {
@@ -103,9 +104,28 @@ public class ProdutoService {
     }
 
     public List<Produto> buscarPorNome(String nome) {
-        return produtoRepository.findAll().stream()
-                .filter(p -> p.getNome().toLowerCase().contains(nome.toLowerCase()))
-                .toList();
+        if (nome == null || nome.isBlank()) {
+            return listarTodos();
+        }
+        return produtoRepository.findByNomeContainingIgnoreCase(nome.trim());
+    }
+
+    public List<Produto> listarEstoque() {
+        return produtoRepository.findByTipo(TipoProduto.PRE_PRONTO);
+    }
+
+    public List<Produto> buscarEstoquePorNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return listarEstoque();
+        }
+        return produtoRepository.findByTipoAndNomeContainingIgnoreCase(TipoProduto.PRE_PRONTO, nome.trim());
+    }
+
+    public Optional<Produto> buscarEstoquePorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return produtoRepository.findByIdProdutoAndTipo(id, TipoProduto.PRE_PRONTO);
     }
 
     /** Soma a quantidade em estoque de todos os produtos PRE_PRONTO (rodapé "Total de Produtos: X" do protótipo). */

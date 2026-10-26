@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -379,5 +380,160 @@ class ProdutoServiceTest {
         produtoService.excluir(id);
 
         assertFalse(produtoRepository.findById(id).isPresent());
+    }
+
+    @Test
+    void deveListarApenasProdutosPreProntoNoEstoque() {
+        produtoService.cadastrarComMateriais(
+                "EST-001", "Terço de madeira", "Terço em estoque",
+                TipoProduto.PRE_PRONTO, 10, null, null,
+                true, new BigDecimal("25.00"), List.of()
+        );
+        produtoService.cadastrarComMateriais(
+                "EST-002", "Pulseira de resina", "Pulseira em estoque",
+                TipoProduto.PRE_PRONTO, 5, null, null,
+                true, new BigDecimal("15.00"), List.of()
+        );
+        produtoService.cadastrarComMateriais(
+                "PER-001", "Terço personalizado azul", "Terço sob encomenda",
+                TipoProduto.PERSONALIZADO, null, 7, "Sob demanda",
+                true, new BigDecimal("50.00"), List.of()
+        );
+
+        List<Produto> produtosEstoque = produtoService.listarEstoque();
+
+        assertEquals(2, produtosEstoque.size());
+        assertTrue(produtosEstoque.stream().allMatch(p -> p.getTipo() == TipoProduto.PRE_PRONTO));
+        assertTrue(produtosEstoque.stream().anyMatch(p -> p.getCodigo().equals("EST-001")));
+        assertTrue(produtosEstoque.stream().anyMatch(p -> p.getCodigo().equals("EST-002")));
+    }
+
+    @Test
+    void deveRetornarListaVaziaQuandoNaoHouverProdutosNoEstoque() {
+        List<Produto> produtosEstoque = produtoService.listarEstoque();
+
+        assertNotNull(produtosEstoque);
+        assertTrue(produtosEstoque.isEmpty());
+    }
+
+    @Test
+    void deveBuscarProdutoNoEstoquePorNome() {
+        produtoService.cadastrarComMateriais(
+                "EST-001", "Terço de madeira", "Terço em estoque",
+                TipoProduto.PRE_PRONTO, 10, null, null,
+                true, new BigDecimal("25.00"), List.of()
+        );
+        produtoService.cadastrarComMateriais(
+                "EST-002", "Pulseira de resina", "Pulseira em estoque",
+                TipoProduto.PRE_PRONTO, 5, null, null,
+                true, new BigDecimal("15.00"), List.of()
+        );
+
+        List<Produto> encontrados = produtoService.buscarEstoquePorNome("madeira");
+
+        assertEquals(1, encontrados.size());
+        assertEquals("Terço de madeira", encontrados.get(0).getNome());
+        assertEquals(TipoProduto.PRE_PRONTO, encontrados.get(0).getTipo());
+    }
+
+    @Test
+    void deveBuscarProdutoNoEstoquePorNomeIgnorandoCaseEComEspacos() {
+        produtoService.cadastrarComMateriais(
+                "EST-001", "Crucifixo Dourado", "Crucifixo",
+                TipoProduto.PRE_PRONTO, 8, null, null,
+                true, new BigDecimal("35.00"), List.of()
+        );
+
+        List<Produto> encontrados = produtoService.buscarEstoquePorNome("  crucifixo dourado  ");
+
+        assertEquals(1, encontrados.size());
+        assertEquals("Crucifixo Dourado", encontrados.get(0).getNome());
+    }
+
+    @Test
+    void deveRetornarTodosDoEstoqueAoBuscarPorNomeNuloOuEmBranco() {
+        produtoService.cadastrarComMateriais(
+                "EST-001", "Produto A", "Desc",
+                TipoProduto.PRE_PRONTO, 5, null, null,
+                true, new BigDecimal("10.00"), List.of()
+        );
+        produtoService.cadastrarComMateriais(
+                "EST-002", "Produto B", "Desc",
+                TipoProduto.PRE_PRONTO, 10, null, null,
+                true, new BigDecimal("20.00"), List.of()
+        );
+
+        assertEquals(2, produtoService.buscarEstoquePorNome(null).size());
+        assertEquals(2, produtoService.buscarEstoquePorNome("   ").size());
+    }
+
+    @Test
+    void deveRetornarVazioAoBuscarPorNomeSemCorrespondenciaNoEstoque() {
+        produtoService.cadastrarComMateriais(
+                "EST-001", "Produto A", "Desc",
+                TipoProduto.PRE_PRONTO, 5, null, null,
+                true, new BigDecimal("10.00"), List.of()
+        );
+
+        List<Produto> encontrados = produtoService.buscarEstoquePorNome("inexistente");
+
+        assertNotNull(encontrados);
+        assertTrue(encontrados.isEmpty());
+    }
+
+    @Test
+    void naoDeveRetornarProdutoPersonalizadoAoBuscarPorNomeNoEstoque() {
+        produtoService.cadastrarComMateriais(
+                "PER-001", "Terço de cristal", "Personalizado",
+                TipoProduto.PERSONALIZADO, null, 10, "Sob encomenda",
+                true, new BigDecimal("80.00"), List.of()
+        );
+
+        List<Produto> encontrados = produtoService.buscarEstoquePorNome("cristal");
+
+        assertTrue(encontrados.isEmpty());
+    }
+
+    @Test
+    void deveBuscarProdutoDoEstoquePorId() {
+        Produto salvo = produtoService.cadastrarComMateriais(
+                "EST-001", "Terço de madeira", "Desc",
+                TipoProduto.PRE_PRONTO, 10, null, null,
+                true, new BigDecimal("25.00"), List.of()
+        );
+
+        Optional<Produto> encontrado = produtoService.buscarEstoquePorId(salvo.getIdProduto());
+
+        assertTrue(encontrado.isPresent());
+        assertEquals("EST-001", encontrado.get().getCodigo());
+        assertEquals(TipoProduto.PRE_PRONTO, encontrado.get().getTipo());
+        assertEquals(10, encontrado.get().getQuantidadeEstoque());
+    }
+
+    @Test
+    void deveRetornarVazioAoBuscarProdutoDoEstoquePorIdInexistente() {
+        Optional<Produto> encontrado = produtoService.buscarEstoquePorId(999999L);
+
+        assertFalse(encontrado.isPresent());
+    }
+
+    @Test
+    void deveRetornarVazioAoBuscarPorIdNuloNoEstoque() {
+        Optional<Produto> encontrado = produtoService.buscarEstoquePorId(null);
+
+        assertFalse(encontrado.isPresent());
+    }
+
+    @Test
+    void naoDeveEncontrarProdutoPersonalizadoAoBuscarPorIdNoEstoque() {
+        Produto personalizado = produtoService.cadastrarComMateriais(
+                "PER-001", "Terço especial", "Personalizado",
+                TipoProduto.PERSONALIZADO, null, 5, "Sob demanda",
+                true, new BigDecimal("70.00"), List.of()
+        );
+
+        Optional<Produto> encontrado = produtoService.buscarEstoquePorId(personalizado.getIdProduto());
+
+        assertFalse(encontrado.isPresent());
     }
 }
