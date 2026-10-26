@@ -7,7 +7,6 @@ import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.repository.MaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
-import com.managementsystem.demo1.service.ItemMaterialInput;
 import com.managementsystem.demo1.service.ProdutoService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -48,14 +47,6 @@ class EstoqueRestControllerTest {
         produtoMaterialRepository.deleteAll();
         produtoRepository.deleteAll();
         materialRepository.deleteAll();
-    }
-
-    private Material criarMaterial(String nome, String preco, String unidade) {
-        Material material = new Material();
-        material.setNome(nome);
-        material.setPrecoUnidade(new BigDecimal(preco));
-        material.setUnidadeMedida(unidade);
-        return materialRepository.save(material);
     }
 
     private Produto criarProdutoPrePronto(String codigo, String nome, int quantidadeEstoque, String valorVenda) {

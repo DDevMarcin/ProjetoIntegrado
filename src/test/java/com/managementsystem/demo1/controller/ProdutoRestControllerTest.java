@@ -19,7 +19,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest(classes = BackendApplication.class)
@@ -124,5 +124,84 @@ class ProdutoRestControllerTest {
         mockMvc.perform(get("/produtos/total-estoque"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total", is(25)));
+    }
+
+    @Test
+    void deveExcluirProdutoExistenteRetornando204() throws Exception {
+        Produto produto = cadastrarProduto("P-DEL", "Para Deletar", TipoProduto.PRE_PRONTO, 5, null);
+
+        mockMvc.perform(delete("/produtos/" + produto.getIdProduto()))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/produtos/" + produto.getIdProduto()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar404AoExcluirProdutoInexistente() throws Exception {
+        mockMvc.perform(delete("/produtos/999999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar400AoCadastrarProdutoComCodigoDuplicado() throws Exception {
+        cadastrarProduto("P-DUP", "Original", TipoProduto.PRE_PRONTO, 5, null);
+
+        String json = """
+                {
+                    "codigo": "P-DUP",
+                    "nome": "Duplicado",
+                    "descricao": "Desc",
+                    "tipo": "PRE_PRONTO",
+                    "quantidadeEstoque": 10,
+                    "calcularManualmente": true,
+                    "valorManual": 30.00,
+                    "materiais": []
+                }
+                """;
+
+        mockMvc.perform(post("/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe um produto com o código informado")));
+    }
+
+    @Test
+    void deveRetornar404AoAtualizarProdutoInexistente() throws Exception {
+        String json = """
+                {
+                    "codigo": "P-NOVO",
+                    "nome": "Inexistente",
+                    "descricao": "Desc",
+                    "quantidadeEstoque": 10
+                }
+                """;
+
+        mockMvc.perform(put("/produtos/999999")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar400AoAtualizarProdutoComCodigoDuplicado() throws Exception {
+        cadastrarProduto("P-01", "Produto 1", TipoProduto.PRE_PRONTO, 5, null);
+        Produto p2 = cadastrarProduto("P-02", "Produto 2", TipoProduto.PRE_PRONTO, 5, null);
+
+        String json = """
+                {
+                    "codigo": "P-01",
+                    "nome": "Produto 2 com codigo do 1",
+                    "descricao": "Desc",
+                    "quantidadeEstoque": 10
+                }
+                """;
+
+        mockMvc.perform(put("/produtos/" + p2.getIdProduto())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe outro produto cadastrado")));
     }
 }
