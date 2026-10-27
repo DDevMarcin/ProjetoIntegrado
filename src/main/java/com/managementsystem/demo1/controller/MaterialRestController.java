@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/materiais")
@@ -65,5 +66,34 @@ public class MaterialRestController {
         return materialService.buscarPorId(id)
                 .<ResponseEntity<?>>map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // PUT /materiais/{id}
+    @PutMapping("/{id}")
+    public ResponseEntity<?> atualizar(@PathVariable("id") Long id, @RequestBody(required = false) NovoMaterialDTO dto) {
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Dados do material são obrigatórios."));
+        }
+        try {
+            Material atualizado = materialService.atualizar(id, dto.nome(), dto.precoUnidade(), dto.unidadeMedida());
+            return ResponseEntity.ok(atualizado);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    // DELETE /materiais/{id}
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> excluir(@PathVariable("id") Long id) {
+        try {
+            materialService.excluir(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
     }
 }

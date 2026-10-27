@@ -25,6 +25,19 @@ public class Material {
     public Material() {
     }
 
+    public Material(String nome, BigDecimal precoUnidade, String unidadeMedida) {
+        this.nome = nome;
+        this.precoUnidade = precoUnidade;
+        this.unidadeMedida = unidadeMedida;
+    }
+
+    public Material(Long idMaterial, String nome, BigDecimal precoUnidade, String unidadeMedida) {
+        this.idMaterial = idMaterial;
+        this.nome = nome;
+        this.precoUnidade = precoUnidade;
+        this.unidadeMedida = unidadeMedida;
+    }
+
     public Long getIdMaterial() {
         return idMaterial;
     }
@@ -68,5 +81,15 @@ public class Material {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return "Material{" +
+                "idMaterial=" + idMaterial +
+                ", nome='" + nome + '\'' +
+                ", precoUnidade=" + precoUnidade +
+                ", unidadeMedida='" + unidadeMedida + '\'' +
+                '}';
     }
 }

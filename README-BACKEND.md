@@ -60,11 +60,13 @@ A tabela produto_material representa a associação entre produtos e materiais.
 A API de materiais possui as seguintes operações:
 
 ```text
-POST /materiais
-GET  /materiais
-GET  /materiais?nome=...&unidadeMedida=...
-GET  /materiais/buscar?nome=...
-GET  /materiais/{id}
+POST   /materiais
+GET    /materiais
+GET    /materiais?nome=...&unidadeMedida=...
+GET    /materiais/buscar?nome=...
+GET    /materiais/{id}
+PUT    /materiais/{id}
+DELETE /materiais/{id}
 ```
 
 # 4.1 Cadastrar Material
@@ -191,21 +193,64 @@ GET /materiais?nome=contas&unidadeMedida=un
 
 # 7. Validações de Material
 
-O backend valida os seguintes campos:
+O backend valida os seguintes campos antes de persistir o material:
 
 ```text
--Nome
+- Nome
+  Obrigatório (não pode ser nulo ou em branco).
+  Tamanho máximo de 255 caracteres.
 
-Não pode ser vazio.
+- Preço
+  Obrigatório (não pode ser nulo).
+  Não pode ser negativo (deve ser >= 0.00).
 
--Preço
-
-Não pode ser nulo nem negativo.
-
--Unidade de medida
-
-Não pode ser vazia.
+- Unidade de medida
+  Obrigatória (não pode ser nula ou em branco).
+  Tamanho máximo de 10 caracteres.
 ```
+
+# 7.1 Atualizar Material
+
+Endpoint:
+
+```text
+PUT /materiais/{id}
+```
+
+Exemplo:
+
+PUT /materiais/1
+
+Body:
+
+```json
+{
+  "nome": "Contas de madeira nobre",
+  "precoUnidade": 0.75,
+  "unidadeMedida": "un"
+}
+```
+
+Resposta esperada:
+
+Retorna o material atualizado com status `200 OK`. Se o ID não existir, retorna `404 Not Found`.
+
+# 7.2 Excluir Material
+
+Endpoint:
+
+```text
+DELETE /materiais/{id}
+```
+
+Exemplo:
+
+DELETE /materiais/1
+
+- Se excluído com sucesso: retorna `204 No Content`.
+- Se o material não existir: retorna `404 Not Found`.
+- Se o material estiver vinculado a um ou mais produtos cadastrados (`produto_material`): retorna `400 Bad Request` com mensagem de erro informando a violação de integridade referencial, impedindo a exclusão para preservar os dados dos produtos.
+
 # 8. API de Produtos
 
 A API de produtos possui atualmente:
