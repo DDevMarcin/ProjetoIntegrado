@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping("/produtos")
@@ -48,7 +49,10 @@ public class ProdutoRestController {
 
     // POST /produtos
     @PostMapping
-    public ResponseEntity<?> cadastrar(@RequestBody NovoProdutoDTO dto) {
+    public ResponseEntity<?> cadastrar(@RequestBody(required = false) NovoProdutoDTO dto) {
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Dados do produto são obrigatórios."));
+        }
         try {
             List<ItemMaterialInput> itens = dto.materiais() == null ? List.of() :
                     dto.materiais().stream()
@@ -61,14 +65,17 @@ public class ProdutoRestController {
                     dto.calcularManualmente(), dto.valorManual(), itens);
 
             return ResponseEntity.status(HttpStatus.CREATED).body(produto);
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException | NoSuchElementException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
     }
 
-    // GET /produtos
+    // GET /produtos (suporta listagem total ou filtro opcional por nome)
     @GetMapping
-    public List<Produto> listar() {
+    public List<Produto> listar(@RequestParam(value = "nome", required = false) String nome) {
+        if (nome != null && !nome.isBlank()) {
+            return produtoService.buscarPorNome(nome);
+        }
         return produtoService.listarTodos();
     }
 
@@ -77,7 +84,7 @@ public class ProdutoRestController {
     public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id) {
         try {
             return ResponseEntity.ok(produtoService.buscarPorId(id));
-        } catch (Exception e) {
+        } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
         }
     }
@@ -90,28 +97,37 @@ public class ProdutoRestController {
 
     // GET /produtos/buscar?nome=xxx
     @GetMapping("/buscar")
-    public List<Produto> buscarPorNome(@RequestParam("nome") String nome) {
+    public List<Produto> buscarPorNome(@RequestParam(value = "nome", required = false) String nome) {
         return produtoService.buscarPorNome(nome);
     }
 
     // PUT /produtos/{id}
     @PutMapping("/{id}")
-    public ResponseEntity<?> atualizar(@PathVariable("id") Long id, @RequestBody AtualizarProdutoDTO dto) {
+    public ResponseEntity<?> atualizar(@PathVariable("id") Long id, @RequestBody(required = false) AtualizarProdutoDTO dto) {
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Dados para atualização são obrigatórios."));
+        }
         try {
             Produto produto = produtoService.atualizar(id, dto.codigo(), dto.nome(), dto.descricao(),
                     dto.quantidadeEstoque(), dto.prazoProducaoDias(), dto.observacoes());
             return ResponseEntity.ok(produto);
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
-        } catch (Exception e) {
-            return ResponseEntity.notFound().build();
         }
     }
 
     // DELETE /produtos/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<?> excluir(@PathVariable("id") Long id) {
-        produtoService.excluir(id);
-        return ResponseEntity.noContent().build();
+        try {
+            produtoService.excluir(id);
+            return ResponseEntity.noContent().build();
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
+        }
     }
 }

@@ -68,4 +68,24 @@ public class ProdutoMaterial {
     public void setQuantidadeUtilizada(BigDecimal quantidadeUtilizada) {
         this.quantidadeUtilizada = quantidadeUtilizada;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProdutoMaterial that = (ProdutoMaterial) o;
+        Long produtoId = (produto != null) ? produto.getIdProduto() : null;
+        Long thatProdutoId = (that.produto != null) ? that.produto.getIdProduto() : null;
+        Long materialId = (material != null) ? material.getIdMaterial() : null;
+        Long thatMaterialId = (that.material != null) ? that.material.getIdMaterial() : null;
+        return java.util.Objects.equals(produtoId, thatProdutoId) &&
+               java.util.Objects.equals(materialId, thatMaterialId);
+    }
+
+    @Override
+    public int hashCode() {
+        Long produtoId = (produto != null) ? produto.getIdProduto() : null;
+        Long materialId = (material != null) ? material.getIdMaterial() : null;
+        return java.util.Objects.hash(produtoId, materialId);
+    }
 }

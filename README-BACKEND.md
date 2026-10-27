@@ -590,3 +590,96 @@ Se foi excluido com sucesso:
 ```text
 204 No Content
 ```
+
+# 23. API de Controle de Estoque
+
+A API de Controle de Estoque permite consultar e gerenciar os produtos sob controle de estoque físico (`tipo = PRE_PRONTO`). Produtos do tipo `PERSONALIZADO` não possuem estoque (são produzidos sob encomenda) e, portanto, não constam neste recurso.
+
+As operações disponíveis são:
+
+```text
+GET /estoque
+GET /estoque?nome=...
+GET /estoque/buscar?nome=...
+GET /estoque/{id}
+GET /estoque/total
+```
+
+> **Nota de compatibilidade:** As rotas `/produtos/estoque` e `/estoque/produtos` também respondem com o mesmo comportamento.
+
+## 23.1 Listar Produtos no Estoque
+
+Endpoint:
+
+```text
+GET /estoque
+```
+
+Exemplo:
+
+```text
+curl http://localhost:8080/estoque
+```
+
+Retorna a lista de produtos pré-prontos com suas respectivas quantidades em estoque e detalhes.
+
+Caso não haja produtos no estoque, retorna lista vazia (`[]`) com status `200 OK`.
+
+## 23.2 Buscar Produto no Estoque por Nome
+
+Endpoint via parâmetro:
+
+```text
+GET /estoque?nome=madeira
+```
+
+Endpoint via rota dedicada:
+
+```text
+GET /estoque/buscar?nome=madeira
+```
+
+O backend pesquisa produtos pré-prontos cujo nome contenha o termo informado (insensível a maiúsculas/minúsculas).
+
+Se o termo for vazio ou em branco, retorna todos os produtos do estoque. Se não houver correspondência, retorna `[]` com status `200 OK`.
+
+## 23.3 Buscar Produto no Estoque por ID
+
+Endpoint:
+
+```text
+GET /estoque/{id}
+```
+
+Exemplo:
+
+```text
+GET /estoque/1
+```
+
+- Se o produto existir e pertencer ao controle de estoque (`tipo = PRE_PRONTO`), retorna `200 OK` com os dados do produto.
+- Se o produto não existir ou pertencer à categoria personalizada (fora do contexto de estoque), retorna:
+
+```text
+404 Not Found
+```
+
+## 23.4 Consultar Total em Estoque
+
+Endpoint:
+
+```text
+GET /estoque/total
+```
+
+(Ou `GET /estoque/total-estoque`)
+
+Resposta:
+
+```json
+{
+  "total": 25
+}
+```
+
+Retorna a soma das quantidades em estoque de todos os produtos sob controle de estoque.

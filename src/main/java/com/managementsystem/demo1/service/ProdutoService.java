@@ -11,8 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProdutoService {
@@ -43,6 +46,14 @@ public class ProdutoService {
         if (codigo == null || codigo.isBlank()) {
             throw new IllegalArgumentException("Código do produto é obrigatório.");
         }
+        String codigoTrim = codigo.trim();
+        if (codigoTrim.length() > 50) {
+            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+        }
+        if (produtoRepository.existsByCodigo(codigoTrim)) {
+            throw new IllegalArgumentException("Já existe um produto com o código informado: " + codigoTrim);
+        }
+
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
@@ -57,30 +68,44 @@ public class ProdutoService {
         }
 
         Produto produto = new Produto();
-        produto.setCodigo(codigo);
-        produto.setNome(nome);
-        produto.setDescricao(descricao);
+        produto.setCodigo(codigoTrim);
+        produto.setNome(nome.trim());
+        produto.setDescricao(descricao != null ? descricao.trim() : null);
         produto.setTipo(tipo);
         produto.setValorManual(calcularManualmente);
 
         if (tipo == TipoProduto.PRE_PRONTO) {
+            if (quantidadeEstoque != null && quantidadeEstoque < 0) {
+                throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
+            }
             produto.setQuantidadeEstoque(quantidadeEstoque == null ? 0 : quantidadeEstoque);
         } else {
+            if (prazoProducaoDias != null && prazoProducaoDias < 0) {
+                throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
+            }
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes);
+            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
         }
 
         BigDecimal valorCalculado = BigDecimal.ZERO;
         List<ProdutoMaterial> vinculos = new ArrayList<>();
 
         if (itensMaterial != null) {
+            Set<Long> materiaisVistos = new HashSet<>();
             for (ItemMaterialInput item : itensMaterial) {
+                if (item == null || item.idMaterial() == null) {
+                    throw new IllegalArgumentException("ID do material é obrigatório.");
+                }
+                Long idMaterial = item.idMaterial();
+                if (!materiaisVistos.add(idMaterial)) {
+                    throw new IllegalArgumentException("Material duplicado na composição do produto: id " + idMaterial);
+                }
                 if (item.quantidadeUtilizada() == null || item.quantidadeUtilizada().signum() <= 0) {
                     throw new IllegalArgumentException("Quantidade utilizada do material deve ser maior que zero.");
                 }
-                Material material = materialRepository.findById(item.idMaterial())
+                Material material = materialRepository.findById(idMaterial)
                         .orElseThrow(() -> new NoSuchElementException(
-                                "Material não encontrado: id " + item.idMaterial()));
+                                "Material não encontrado: id " + idMaterial));
 
                 valorCalculado = valorCalculado.add(material.getPrecoUnidade().multiply(item.quantidadeUtilizada()));
                 vinculos.add(new ProdutoMaterial(produto, material, item.quantidadeUtilizada()));
@@ -98,22 +123,42 @@ public class ProdutoService {
     }
 
     public Produto buscarPorId(Long id) {
+        if (id == null) {
+            throw new NoSuchElementException("ID do produto não informado.");
+        }
         return produtoRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Produto não encontrado: id " + id));
     }
 
     public List<Produto> buscarPorNome(String nome) {
-        return produtoRepository.findAll().stream()
-                .filter(p -> p.getNome().toLowerCase().contains(nome.toLowerCase()))
-                .toList();
+        if (nome == null || nome.isBlank()) {
+            return listarTodos();
+        }
+        return produtoRepository.findByNomeContainingIgnoreCase(nome.trim());
+    }
+
+    public List<Produto> listarEstoque() {
+        return produtoRepository.findByTipo(TipoProduto.PRE_PRONTO);
+    }
+
+    public List<Produto> buscarEstoquePorNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return listarEstoque();
+        }
+        return produtoRepository.findByTipoAndNomeContainingIgnoreCase(TipoProduto.PRE_PRONTO, nome.trim());
+    }
+
+    public Optional<Produto> buscarEstoquePorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return produtoRepository.findByIdProdutoAndTipo(id, TipoProduto.PRE_PRONTO);
     }
 
     /** Soma a quantidade em estoque de todos os produtos PRE_PRONTO (rodapé "Total de Produtos: X" do protótipo). */
     public int totalEmEstoque() {
-        return produtoRepository.findAll().stream()
-                .filter(p -> p.getQuantidadeEstoque() != null)
-                .mapToInt(Produto::getQuantidadeEstoque)
-                .sum();
+        Long total = produtoRepository.sumQuantidadeEstoque();
+        return total != null ? total.intValue() : 0;
     }
 
     @Transactional
@@ -125,16 +170,29 @@ public class ProdutoService {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
         if (codigo != null && !codigo.isBlank()) {
-            produto.setCodigo(codigo);
+            String codigoTrim = codigo.trim();
+            if (codigoTrim.length() > 50) {
+                throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+            }
+            if (produtoRepository.existsByCodigoAndIdProdutoNot(codigoTrim, id)) {
+                throw new IllegalArgumentException("Já existe outro produto cadastrado com o código informado: " + codigoTrim);
+            }
+            produto.setCodigo(codigoTrim);
         }
-        produto.setNome(nome);
-        produto.setDescricao(descricao);
+        produto.setNome(nome.trim());
+        produto.setDescricao(descricao != null ? descricao.trim() : null);
 
         if (produto.getTipo() == TipoProduto.PRE_PRONTO) {
+            if (quantidadeEstoque != null && quantidadeEstoque < 0) {
+                throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
+            }
             produto.setQuantidadeEstoque(quantidadeEstoque);
         } else {
+            if (prazoProducaoDias != null && prazoProducaoDias < 0) {
+                throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
+            }
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes);
+            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
         }
 
         return produtoRepository.save(produto);
@@ -142,6 +200,12 @@ public class ProdutoService {
 
     @Transactional
     public void excluir(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do produto é obrigatório.");
+        }
+        if (!produtoRepository.existsById(id)) {
+            throw new NoSuchElementException("Produto não encontrado: id " + id);
+        }
         produtoRepository.deleteById(id);
     }
 }

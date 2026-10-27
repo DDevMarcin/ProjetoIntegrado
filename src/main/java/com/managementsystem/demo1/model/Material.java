@@ -56,4 +56,17 @@ public class Material {
     public void setPrecoUnidade(BigDecimal precoUnidade) {
         this.precoUnidade = precoUnidade;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Material material = (Material) o;
+        return idMaterial != null && idMaterial.equals(material.idMaterial);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

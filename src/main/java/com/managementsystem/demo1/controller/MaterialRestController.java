@@ -24,7 +24,10 @@ public class MaterialRestController {
 
     // POST /materiais
     @PostMapping
-    public ResponseEntity<?> cadastrar(@RequestBody NovoMaterialDTO dto) {
+    public ResponseEntity<?> cadastrar(@RequestBody(required = false) NovoMaterialDTO dto) {
+        if (dto == null) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Dados do material são obrigatórios."));
+        }
         try {
             Material material = new Material();
             material.setNome(dto.nome());
@@ -52,7 +55,7 @@ public class MaterialRestController {
 
     // GET /materiais/buscar?nome=xxx
     @GetMapping("/buscar")
-    public List<Material> buscarPorNome(@RequestParam("nome") String nome) {
+    public List<Material> buscarPorNome(@RequestParam(value = "nome", required = false) String nome) {
         return materialService.buscarPorNome(nome);
     }
 

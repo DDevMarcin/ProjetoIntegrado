@@ -140,6 +140,22 @@ public class Produto {
     }
 
     public void setMateriaisUtilizados(List<ProdutoMaterial> materiaisUtilizados) {
-        this.materiaisUtilizados = materiaisUtilizados;
+        this.materiaisUtilizados.clear();
+        if (materiaisUtilizados != null) {
+            this.materiaisUtilizados.addAll(materiaisUtilizados);
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Produto produto = (Produto) o;
+        return idProduto != null && idProduto.equals(produto.idProduto);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }
