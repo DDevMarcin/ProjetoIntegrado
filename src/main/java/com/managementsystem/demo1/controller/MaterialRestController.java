@@ -4,7 +4,9 @@ import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.service.MaterialService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -95,5 +97,15 @@ public class MaterialRestController {
         } catch (IllegalArgumentException | IllegalStateException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> tratarIdInvalido(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", "Identificador de material inválido."));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> tratarJsonInvalido(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", "Formato de requisição inválido ou campos incompatíveis."));
     }
 }
