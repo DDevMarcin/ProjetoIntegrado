@@ -3,6 +3,7 @@ package com.managementsystem.demo1.service;
 import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.model.Produto;
 import com.managementsystem.demo1.model.ProdutoMaterial;
+import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.repository.MaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
 import org.springframework.stereotype.Service;
@@ -10,8 +11,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class ProdutoService {
@@ -25,64 +29,90 @@ public class ProdutoService {
     }
 
     /**
-     * Cadastra um produto pré-pronto calculando o valor a partir dos materiais
-     * utilizados, conforme o diagrama de sequência (calcularValorProduto ->
-     * consultarDadosMateriais -> calcularValorTotal).
+     * @param calcularManualmente se true, usa valorManual direto (artesã digitou o preço).
+     *                            Se false, calcula a partir dos materiais (itensMaterial obrigatório).
+     * @param valorManual         obrigatório se calcularManualmente = true.
+     * @param itensMaterial       obrigatório (não vazio) se calcularManualmente = false;
+     *                            opcional (pode ser vazio) se calcularManualmente = true
+     *                            (a artesã ainda pode registrar materiais usados, mesmo
+     *                            definindo o preço na mão).
      */
     @Transactional
-    public Produto cadastrarComMateriais(String nome, String descricao, Integer quantidade,
-                                         List<ItemMaterialInput> itensMaterial) {
+    public Produto cadastrarComMateriais(String codigo, String nome, String descricao, TipoProduto tipo,
+                                         Integer quantidadeEstoque, Integer prazoProducaoDias,
+                                         String observacoes, boolean calcularManualmente,
+                                         BigDecimal valorManual, List<ItemMaterialInput> itensMaterial) {
+
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("Código do produto é obrigatório.");
+        }
+        String codigoTrim = codigo.trim();
+        if (codigoTrim.length() > 50) {
+            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+        }
+        if (produtoRepository.existsByCodigo(codigoTrim)) {
+            throw new IllegalArgumentException("Já existe um produto com o código informado: " + codigoTrim);
+        }
 
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
-
-        if (quantidade == null || quantidade < 0) {
-            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
+        if (tipo == null) {
+            throw new IllegalArgumentException("Tipo do produto é obrigatório.");
         }
-
-        if (itensMaterial == null || itensMaterial.isEmpty()) {
-            throw new IllegalArgumentException("Informe ao menos um material usado no produto.");
+        if (calcularManualmente && (valorManual == null || valorManual.signum() <= 0)) {
+            throw new IllegalArgumentException("Informe um valor de venda válido.");
+        }
+        if (!calcularManualmente && (itensMaterial == null || itensMaterial.isEmpty())) {
+            throw new IllegalArgumentException("Informe ao menos um material usado no produto, ou marque 'Calcular manualmente'.");
         }
 
         Produto produto = new Produto();
-        produto.setNome(nome);
-        produto.setDescricao(descricao);
-        produto.setQuantidade(quantidade);
+        produto.setCodigo(codigoTrim);
+        produto.setNome(nome.trim());
+        produto.setDescricao(descricao != null ? descricao.trim() : null);
+        produto.setTipo(tipo);
+        produto.setValorManual(calcularManualmente);
 
-        BigDecimal valorTotal = BigDecimal.ZERO;
-
-        List<ProdutoMaterial> vinculos = new ArrayList<>();
-
-        for (ItemMaterialInput item : itensMaterial) {
-
-            if (item.quantidadeUtilizada() == null
-                    || item.quantidadeUtilizada().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException(
-                        "Quantidade utilizada do material deve ser maior que zero."
-                );
+        if (tipo == TipoProduto.PRE_PRONTO) {
+            if (quantidadeEstoque != null && quantidadeEstoque < 0) {
+                throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
             }
-
-            Material material = materialRepository.findById(item.idMaterial())
-                    .orElseThrow(() -> new NoSuchElementException(
-                            "Material não encontrado: id " + item.idMaterial()
-                    ));
-
-            BigDecimal valorMaterial = material.getPrecoUnidade()
-                    .multiply(item.quantidadeUtilizada());
-
-            valorTotal = valorTotal.add(valorMaterial);
-
-            vinculos.add(
-                    new ProdutoMaterial(
-                            produto,
-                            material,
-                            item.quantidadeUtilizada()
-                    )
-            );
+            produto.setQuantidadeEstoque(quantidadeEstoque == null ? 0 : quantidadeEstoque);
+        } else {
+            if (prazoProducaoDias != null && prazoProducaoDias < 0) {
+                throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
+            }
+            produto.setPrazoProducaoDias(prazoProducaoDias);
+            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
         }
 
-        produto.setValor(valorTotal);
+        BigDecimal valorCalculado = BigDecimal.ZERO;
+        List<ProdutoMaterial> vinculos = new ArrayList<>();
+
+        if (itensMaterial != null) {
+            Set<Long> materiaisVistos = new HashSet<>();
+            for (ItemMaterialInput item : itensMaterial) {
+                if (item == null || item.idMaterial() == null) {
+                    throw new IllegalArgumentException("ID do material é obrigatório.");
+                }
+                Long idMaterial = item.idMaterial();
+                if (!materiaisVistos.add(idMaterial)) {
+                    throw new IllegalArgumentException("Material duplicado na composição do produto: id " + idMaterial);
+                }
+                if (item.quantidadeUtilizada() == null || item.quantidadeUtilizada().signum() <= 0) {
+                    throw new IllegalArgumentException("Quantidade utilizada do material deve ser maior que zero.");
+                }
+                Material material = materialRepository.findById(idMaterial)
+                        .orElseThrow(() -> new NoSuchElementException(
+                                "Material não encontrado: id " + idMaterial));
+
+                valorCalculado = valorCalculado.add(material.getPrecoUnidade().multiply(item.quantidadeUtilizada()));
+                vinculos.add(new ProdutoMaterial(produto, material, item.quantidadeUtilizada()));
+            }
+        }
+
+        produto.setValor(calcularManualmente ? valorManual : valorCalculado);
         produto.setMateriaisUtilizados(vinculos);
 
         return produtoRepository.save(produto);
@@ -92,42 +122,90 @@ public class ProdutoService {
         return produtoRepository.findAll();
     }
 
+    public Produto buscarPorId(Long id) {
+        if (id == null) {
+            throw new NoSuchElementException("ID do produto não informado.");
+        }
+        return produtoRepository.findById(id)
+                .orElseThrow(() -> new NoSuchElementException("Produto não encontrado: id " + id));
+    }
+
     public List<Produto> buscarPorNome(String nome) {
-        return produtoRepository.findAll().stream()
-                .filter(p -> p.getNome()
-                        .toLowerCase()
-                        .contains(nome.toLowerCase()))
-                .toList();
+        if (nome == null || nome.isBlank()) {
+            return listarTodos();
+        }
+        return produtoRepository.findByNomeContainingIgnoreCase(nome.trim());
+    }
+
+    public List<Produto> listarEstoque() {
+        return produtoRepository.findByTipo(TipoProduto.PRE_PRONTO);
+    }
+
+    public List<Produto> buscarEstoquePorNome(String nome) {
+        if (nome == null || nome.isBlank()) {
+            return listarEstoque();
+        }
+        return produtoRepository.findByTipoAndNomeContainingIgnoreCase(TipoProduto.PRE_PRONTO, nome.trim());
+    }
+
+    public Optional<Produto> buscarEstoquePorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return produtoRepository.findByIdProdutoAndTipo(id, TipoProduto.PRE_PRONTO);
+    }
+
+    /** Soma a quantidade em estoque de todos os produtos PRE_PRONTO (rodapé "Total de Produtos: X" do protótipo). */
+    public int totalEmEstoque() {
+        Long total = produtoRepository.sumQuantidadeEstoque();
+        return total != null ? total.intValue() : 0;
     }
 
     @Transactional
-    public Produto atualizar(Long id, String nome, String descricao, Integer quantidade) {
-
-        Produto produto = produtoRepository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(
-                        "Produto não encontrado: id " + id
-                ));
+    public Produto atualizar(Long id, String codigo, String nome, String descricao, Integer quantidadeEstoque,
+                             Integer prazoProducaoDias, String observacoes) {
+        Produto produto = buscarPorId(id);
 
         if (nome == null || nome.isBlank()) {
             throw new IllegalArgumentException("Nome do produto é obrigatório.");
         }
-
-        if (quantidade == null || quantidade < 0) {
-            throw new IllegalArgumentException("Quantidade não pode ser negativa.");
+        if (codigo != null && !codigo.isBlank()) {
+            String codigoTrim = codigo.trim();
+            if (codigoTrim.length() > 50) {
+                throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+            }
+            if (produtoRepository.existsByCodigoAndIdProdutoNot(codigoTrim, id)) {
+                throw new IllegalArgumentException("Já existe outro produto cadastrado com o código informado: " + codigoTrim);
+            }
+            produto.setCodigo(codigoTrim);
         }
+        produto.setNome(nome.trim());
+        produto.setDescricao(descricao != null ? descricao.trim() : null);
 
-        produto.setNome(nome);
-        produto.setDescricao(descricao);
-        produto.setQuantidade(quantidade);
-
-        // Nota: valor não é recalculado aqui; se os materiais do produto mudarem,
-        // criar um método à parte (ex: recalcularValor) quando essa tela existir.
+        if (produto.getTipo() == TipoProduto.PRE_PRONTO) {
+            if (quantidadeEstoque != null && quantidadeEstoque < 0) {
+                throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
+            }
+            produto.setQuantidadeEstoque(quantidadeEstoque);
+        } else {
+            if (prazoProducaoDias != null && prazoProducaoDias < 0) {
+                throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
+            }
+            produto.setPrazoProducaoDias(prazoProducaoDias);
+            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
+        }
 
         return produtoRepository.save(produto);
     }
 
     @Transactional
     public void excluir(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do produto é obrigatório.");
+        }
+        if (!produtoRepository.existsById(id)) {
+            throw new NoSuchElementException("Produto não encontrado: id " + id);
+        }
         produtoRepository.deleteById(id);
     }
 }

@@ -1,14 +1,11 @@
 package com.managementsystem.demo1.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
-/**
- * Tabela associativa Produto_Material (N:N com atributo),
- * conforme o modelo relacional: cada produto usa N materiais,
- * cada um com uma quantidade utilizada específica.
- */
 @Entity
 @Table(name = "produto_material")
 @IdClass(ProdutoMaterialId.class)
@@ -22,6 +19,7 @@ public class ProdutoMaterial {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_produto_material_produto")
     )
+    @JsonIgnore
     private Produto produto;
 
     @Id
@@ -32,6 +30,7 @@ public class ProdutoMaterial {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_produto_material_material")
     )
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Material material;
 
     @Column(name = "quantidade_utilizada", nullable = false, precision = 10, scale = 2)
@@ -68,5 +67,25 @@ public class ProdutoMaterial {
 
     public void setQuantidadeUtilizada(BigDecimal quantidadeUtilizada) {
         this.quantidadeUtilizada = quantidadeUtilizada;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ProdutoMaterial that = (ProdutoMaterial) o;
+        Long produtoId = (produto != null) ? produto.getIdProduto() : null;
+        Long thatProdutoId = (that.produto != null) ? that.produto.getIdProduto() : null;
+        Long materialId = (material != null) ? material.getIdMaterial() : null;
+        Long thatMaterialId = (that.material != null) ? that.material.getIdMaterial() : null;
+        return java.util.Objects.equals(produtoId, thatProdutoId) &&
+               java.util.Objects.equals(materialId, thatMaterialId);
+    }
+
+    @Override
+    public int hashCode() {
+        Long produtoId = (produto != null) ? produto.getIdProduto() : null;
+        Long materialId = (material != null) ? material.getIdMaterial() : null;
+        return java.util.Objects.hash(produtoId, materialId);
     }
 }
