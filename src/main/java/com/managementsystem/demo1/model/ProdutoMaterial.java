@@ -1,11 +1,14 @@
 package com.managementsystem.demo1.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 
+/**
+ * Tabela associativa Produto_Material (N:N com atributo),
+ * conforme o modelo relacional: cada produto usa N materiais,
+ * cada um com uma quantidade utilizada específica.
+ */
 @Entity
 @Table(name = "produto_material")
 @IdClass(ProdutoMaterialId.class)
@@ -19,7 +22,6 @@ public class ProdutoMaterial {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_produto_material_produto")
     )
-    @JsonIgnore
     private Produto produto;
 
     @Id
@@ -30,7 +32,6 @@ public class ProdutoMaterial {
             nullable = false,
             foreignKey = @ForeignKey(name = "fk_produto_material_material")
     )
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private Material material;
 
     @Column(name = "quantidade_utilizada", nullable = false, precision = 10, scale = 2)
