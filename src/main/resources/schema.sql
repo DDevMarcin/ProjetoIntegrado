@@ -5,7 +5,7 @@
 
 CREATE TABLE IF NOT EXISTS material (
     id_material         INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome                VARCHAR(255)    NOT NULL,
+    nome                VARCHAR(255)    NOT NULL UNIQUE,
     unidade_medida      VARCHAR(10)     NOT NULL,
     preco_unidade       NUMERIC(10,2)   NOT NULL,
     quantidade_estoque  NUMERIC(10,2)   NOT NULL DEFAULT 0
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS material (
 CREATE TABLE IF NOT EXISTS produto (
     id_produto            INTEGER PRIMARY KEY AUTOINCREMENT,
     codigo                VARCHAR(50)     NOT NULL UNIQUE,
-    nome                  VARCHAR(255)    NOT NULL,
+    nome                  VARCHAR(255)    NOT NULL UNIQUE,
     descricao             VARCHAR(255),
     tipo                  VARCHAR(255)    NOT NULL CHECK (tipo IN ('PRE_PRONTO', 'PERSONALIZADO')),
     valor                 NUMERIC(10,2)   NOT NULL,

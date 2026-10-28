@@ -49,6 +49,10 @@ public class ProdutoService {
         }
 
         String nomeTrim = validarNomeObrigatorio(nome);
+        if (existeProdutoComMesmoNome(nomeTrim)) {
+            throw new IllegalArgumentException("Já existe um produto cadastrado com o nome informado: " + nomeTrim);
+        }
+
         String descricaoTrim = validarDescricaoOpcional(descricao);
 
         if (tipo == null) {
@@ -170,6 +174,10 @@ public class ProdutoService {
         }
 
         String nomeTrim = validarNomeObrigatorio(nome);
+        if (existeOutroProdutoComMesmoNome(nomeTrim, id)) {
+            throw new IllegalArgumentException("Já existe outro produto cadastrado com o nome informado: " + nomeTrim);
+        }
+
         String descricaoTrim = validarDescricaoOpcional(descricao);
 
         produto.setCodigo(codigoTrim);
@@ -246,5 +254,20 @@ public class ProdutoService {
             throw new IllegalArgumentException("Observações do produto não podem ultrapassar 500 caracteres.");
         }
         return observacoesTrim;
+    }
+
+    private boolean existeProdutoComMesmoNome(String nomeTrim) {
+        return produtoRepository.existsByNomeIgnoreCase(nomeTrim)
+                || produtoRepository.findAll().stream()
+                        .anyMatch(p -> p.getNome() != null && p.getNome().trim().equalsIgnoreCase(nomeTrim));
+    }
+
+    private boolean existeOutroProdutoComMesmoNome(String nomeTrim, Long idIgnorado) {
+        return produtoRepository.existsByNomeIgnoreCaseAndIdProdutoNot(nomeTrim, idIgnorado)
+                || produtoRepository.findAll().stream()
+                        .anyMatch(p -> p.getIdProduto() != null
+                                && !p.getIdProduto().equals(idIgnorado)
+                                && p.getNome() != null
+                                && p.getNome().trim().equalsIgnoreCase(nomeTrim));
     }
 }

@@ -39,10 +39,20 @@ public class MaterialService {
     @Transactional
     public Material salvar(Material material) {
         validar(material);
-        if (material.getIdMaterial() != null && !materialRepository.existsById(material.getIdMaterial())) {
-            throw new NoSuchElementException("Material não encontrado: id " + material.getIdMaterial());
+        String nomeTrim = material.getNome().trim();
+        if (material.getIdMaterial() != null) {
+            if (!materialRepository.existsById(material.getIdMaterial())) {
+                throw new NoSuchElementException("Material não encontrado: id " + material.getIdMaterial());
+            }
+            if (existeOutroMaterialComMesmoNome(nomeTrim, material.getIdMaterial())) {
+                throw new IllegalArgumentException("Já existe outro material cadastrado com o nome informado: " + nomeTrim);
+            }
+        } else {
+            if (existeMaterialComMesmoNome(nomeTrim)) {
+                throw new IllegalArgumentException("Já existe um material cadastrado com o nome informado: " + nomeTrim);
+            }
         }
-        material.setNome(material.getNome().trim());
+        material.setNome(nomeTrim);
         material.setUnidadeMedida(material.getUnidadeMedida().trim());
         if (material.getQuantidadeEstoque() == null) {
             material.setQuantidadeEstoque(BigDecimal.ZERO);
@@ -108,7 +118,12 @@ public class MaterialService {
         Material dados = new Material(nome, precoUnidade, unidadeMedida);
         validar(dados);
 
-        material.setNome(dados.getNome().trim());
+        String nomeTrim = dados.getNome().trim();
+        if (existeOutroMaterialComMesmoNome(nomeTrim, id)) {
+            throw new IllegalArgumentException("Já existe outro material cadastrado com o nome informado: " + nomeTrim);
+        }
+
+        material.setNome(nomeTrim);
         material.setPrecoUnidade(dados.getPrecoUnidade());
         material.setUnidadeMedida(dados.getUnidadeMedida().trim());
 
@@ -319,5 +334,20 @@ public class MaterialService {
         if (material.getQuantidadeEstoque() != null && material.getQuantidadeEstoque().signum() < 0) {
             throw new IllegalArgumentException("A quantidade em estoque do material não pode ser negativa.");
         }
+    }
+
+    private boolean existeMaterialComMesmoNome(String nomeTrim) {
+        return materialRepository.existsByNomeIgnoreCase(nomeTrim)
+                || materialRepository.findAll().stream()
+                        .anyMatch(m -> m.getNome() != null && m.getNome().trim().equalsIgnoreCase(nomeTrim));
+    }
+
+    private boolean existeOutroMaterialComMesmoNome(String nomeTrim, Long idIgnorado) {
+        return materialRepository.existsByNomeIgnoreCaseAndIdMaterialNot(nomeTrim, idIgnorado)
+                || materialRepository.findAll().stream()
+                        .anyMatch(m -> m.getIdMaterial() != null
+                                && !m.getIdMaterial().equals(idIgnorado)
+                                && m.getNome() != null
+                                && m.getNome().trim().equalsIgnoreCase(nomeTrim));
     }
 }

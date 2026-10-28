@@ -66,6 +66,7 @@ public class CadastrarProdutoController {
     public void initialize() {
         carregarTipos();
         carregarMateriaisDisponiveis();
+        comboMaterial.setOnShowing(event -> carregarMateriaisDisponiveis());
         atualizarListaProdutos();
 
         campoPrazoProducao.setDisable(true);
@@ -146,6 +147,13 @@ public class CadastrarProdutoController {
         if (material == null) {
             labelStatus.setText(
                     "Selecione um material antes de adicionar."
+            );
+            return;
+        }
+
+        if (materiaisEscolhidos.stream().anyMatch(m -> m.getIdMaterial().equals(material.getIdMaterial()))) {
+            labelStatus.setText(
+                    "Erro: Este material já foi adicionado à composição do produto."
             );
             return;
         }

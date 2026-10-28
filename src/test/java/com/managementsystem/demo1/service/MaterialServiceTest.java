@@ -520,4 +520,35 @@ class MaterialServiceTest {
         assertEquals(1, perdas.size());
         assertEquals("Peça oxidada", perdas.get(0).getMotivo());
     }
+
+    @Test
+    void naoDeveSalvarMaterialComNomeDuplicadoIgnorandoCaseEEspacos() {
+        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
+
+        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                materialService.salvar("Contas de madeira", new BigDecimal("0.80"), "cx")
+        );
+        assertTrue(ex1.getMessage().contains("Já existe um material cadastrado com o nome informado"));
+
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                materialService.salvar("   CONTAS DE MADEIRA   ", new BigDecimal("1.00"), "un")
+        );
+        assertTrue(ex2.getMessage().contains("Já existe um material cadastrado com o nome informado"));
+
+        assertEquals(1, materialRepository.count());
+    }
+
+    @Test
+    void naoDeveAtualizarMaterialComNomeDuplicadoDeOutroMaterial() {
+        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
+        Material m2 = materialService.salvar("Fio encerado", new BigDecimal("1.20"), "m");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                materialService.atualizar(m2.getIdMaterial(), "  contas de madeira  ", new BigDecimal("1.50"), "m")
+        );
+        assertTrue(ex.getMessage().contains("Já existe outro material cadastrado com o nome informado"));
+
+        Material atualizadoMesmoNome = materialService.atualizar(m2.getIdMaterial(), "Fio encerado", new BigDecimal("2.00"), "m");
+        assertEquals(0, new BigDecimal("2.00").compareTo(atualizadoMesmoNome.getPrecoUnidade()));
+    }
 }

@@ -12,4 +12,8 @@ public interface MaterialRepository extends JpaRepository<Material, Long> {
     List<Material> findByUnidadeMedidaIgnoreCase(String unidadeMedida);
 
     List<Material> findByNomeContainingIgnoreCaseAndUnidadeMedidaIgnoreCase(String nome, String unidadeMedida);
+
+    boolean existsByNomeIgnoreCase(String nome);
+
+    boolean existsByNomeIgnoreCaseAndIdMaterialNot(String nome, Long idMaterial);
 }

@@ -811,4 +811,48 @@ class MaterialRestControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)));
     }
+
+    @Test
+    void deveRetornar400AoCadastrarMaterialComNomeDuplicado() throws Exception {
+        criarMaterial("Contas de madeira", "0.50", "un");
+
+        String jsonDuplicado = """
+                {
+                    "nome": "  contas de madeira  ",
+                    "precoUnidade": 1.00,
+                    "unidadeMedida": "cx"
+                }
+                """;
+
+        mockMvc.perform(post("/materiais")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonDuplicado))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe um material cadastrado com o nome informado")));
+
+        assertEquals(1, materialRepository.count());
+    }
+
+    @Test
+    void deveRetornar400AoAtualizarMaterialComNomeDuplicadoDeOutroMaterial() throws Exception {
+        criarMaterial("Contas de madeira", "0.50", "un");
+        Material m2 = criarMaterial("Fio encerado", "1.20", "m");
+
+        String jsonConflito = """
+                {
+                    "nome": "CONTAS DE MADEIRA",
+                    "precoUnidade": 1.50,
+                    "unidadeMedida": "m"
+                }
+                """;
+
+        mockMvc.perform(put("/materiais/" + m2.getIdMaterial())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonConflito))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe outro material cadastrado com o nome informado")));
+
+        Material noBanco = materialRepository.findById(m2.getIdMaterial()).orElseThrow();
+        assertEquals("Fio encerado", noBanco.getNome());
+    }
 }

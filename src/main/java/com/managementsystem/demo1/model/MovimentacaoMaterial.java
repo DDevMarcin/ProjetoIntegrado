@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "movimentacao_material")
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class MovimentacaoMaterial {
 
     @Id
