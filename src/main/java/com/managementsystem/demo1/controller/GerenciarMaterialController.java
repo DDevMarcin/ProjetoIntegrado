@@ -1,6 +1,8 @@
 package com.managementsystem.demo1.controller;
 
 import com.managementsystem.demo1.model.Material;
+import com.managementsystem.demo1.model.MovimentacaoMaterial;
+import com.managementsystem.demo1.model.TipoMovimentacaoMaterial;
 import com.managementsystem.demo1.service.MaterialService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -8,12 +10,15 @@ import javafx.scene.control.*;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Component
 public class GerenciarMaterialController {
+
+    private static final DateTimeFormatter FORMATADOR_DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
 
     @FXML
     private Label labelTotalMateriais;
@@ -29,6 +34,9 @@ public class GerenciarMaterialController {
 
     @FXML
     private TextField campoUnidadeMedida;
+
+    @FXML
+    private TextField campoQuantidadeEstoqueInicial;
 
     @FXML
     private Button botaoAtualizar;
@@ -63,6 +71,31 @@ public class GerenciarMaterialController {
     @FXML
     private Label labelDetalhesUnidade;
 
+    @FXML
+    private Label labelDetalhesEstoque;
+
+    // --- Controles de Movimentação e Perda ---
+    @FXML
+    private ComboBox<TipoMovimentacaoMaterial> comboTipoMovimentacao;
+
+    @FXML
+    private TextField campoQuantidadeMovimentacao;
+
+    @FXML
+    private TextField campoMotivoMovimentacao;
+
+    @FXML
+    private TextField campoObservacoesMovimentacao;
+
+    @FXML
+    private Button botaoRegistrarMovimentacao;
+
+    @FXML
+    private Button botaoRegistrarPerda;
+
+    @FXML
+    private ListView<String> listaHistoricoMovimentacoes;
+
     private final MaterialService materialService;
 
     private List<Material> materiaisCarregados = List.of();
@@ -74,8 +107,13 @@ public class GerenciarMaterialController {
 
     @FXML
     public void initialize() {
+        if (comboTipoMovimentacao != null) {
+            comboTipoMovimentacao.setItems(FXCollections.observableArrayList(TipoMovimentacaoMaterial.values()));
+            comboTipoMovimentacao.getSelectionModel().select(TipoMovimentacaoMaterial.ENTRADA);
+        }
         configurarSelecaoLista();
         carregarTodos();
+        carregarHistoricoGeral();
         atualizarEstadoBotoesEdicao();
     }
 
@@ -94,13 +132,26 @@ public class GerenciarMaterialController {
         campoNome.setText(material.getNome());
         campoPrecoUnidade.setText(material.getPrecoUnidade() != null ? material.getPrecoUnidade().toPlainString() : "");
         campoUnidadeMedida.setText(material.getUnidadeMedida());
+        if (campoQuantidadeEstoqueInicial != null) {
+            campoQuantidadeEstoqueInicial.setText(
+                    material.getQuantidadeEstoque() != null ? material.getQuantidadeEstoque().toPlainString() : "0"
+            );
+            campoQuantidadeEstoqueInicial.setDisable(true);
+        }
 
         labelDetalhesId.setText(String.valueOf(material.getIdMaterial()));
         labelDetalhesNome.setText(material.getNome());
         labelDetalhesPreco.setText("R$ " + material.getPrecoUnidade());
         labelDetalhesUnidade.setText(material.getUnidadeMedida());
+        if (labelDetalhesEstoque != null) {
+            labelDetalhesEstoque.setText(
+                    (material.getQuantidadeEstoque() != null ? material.getQuantidadeEstoque() : BigDecimal.ZERO)
+                            + " " + material.getUnidadeMedida()
+            );
+        }
 
         atualizarEstadoBotoesEdicao();
+        carregarHistoricoDoSelecionado();
     }
 
     private void atualizarEstadoBotoesEdicao() {
@@ -111,20 +162,31 @@ public class GerenciarMaterialController {
         if (botaoExcluir != null) {
             botaoExcluir.setDisable(!temSelecao);
         }
+        if (botaoRegistrarMovimentacao != null) {
+            botaoRegistrarMovimentacao.setDisable(!temSelecao);
+        }
+        if (botaoRegistrarPerda != null) {
+            botaoRegistrarPerda.setDisable(!temSelecao);
+        }
     }
 
     @FXML
     public void cadastrarNovo() {
         try {
             String nome = campoNome.getText();
-            BigDecimal preco = lerPreco(campoPrecoUnidade.getText());
+            BigDecimal preco = lerDecimal(campoPrecoUnidade.getText(), "Informe um valor numérico válido para o preço por unidade.");
             String unidade = campoUnidadeMedida.getText();
+            BigDecimal estoqueInicial = BigDecimal.ZERO;
+            if (campoQuantidadeEstoqueInicial != null && campoQuantidadeEstoqueInicial.getText() != null && !campoQuantidadeEstoqueInicial.getText().isBlank()) {
+                estoqueInicial = lerDecimal(campoQuantidadeEstoqueInicial.getText(), "Informe um valor numérico válido para o estoque inicial.");
+            }
 
-            Material salvo = materialService.salvar(nome, preco, unidade);
+            Material salvo = materialService.salvar(nome, preco, unidade, estoqueInicial);
 
             limparFormulario();
             carregarTodos();
-            exibirMensagemSucesso("Material cadastrado com sucesso! ID gerado: " + salvo.getIdMaterial());
+            exibirMensagemSucesso("Material cadastrado com sucesso! ID gerado: " + salvo.getIdMaterial()
+                    + " | Estoque inicial: " + salvo.getQuantidadeEstoque() + " " + salvo.getUnidadeMedida());
         } catch (IllegalArgumentException e) {
             exibirMensagemErro("Erro de validação: " + e.getMessage());
         } catch (Exception e) {
@@ -142,7 +204,7 @@ public class GerenciarMaterialController {
         try {
             Long id = materialSelecionado.getIdMaterial();
             String nome = campoNome.getText();
-            BigDecimal preco = lerPreco(campoPrecoUnidade.getText());
+            BigDecimal preco = lerDecimal(campoPrecoUnidade.getText(), "Informe um valor numérico válido para o preço por unidade.");
             String unidade = campoUnidadeMedida.getText();
 
             Material atualizado = materialService.atualizar(id, nome, preco, unidade);
@@ -174,6 +236,7 @@ public class GerenciarMaterialController {
             materialService.excluir(id);
             limparFormulario();
             carregarTodos();
+            carregarHistoricoGeral();
             exibirMensagemSucesso("Material [" + id + " - " + nome + "] excluído com sucesso!");
         } catch (NoSuchElementException e) {
             exibirMensagemErro("Não encontrado: " + e.getMessage());
@@ -183,6 +246,95 @@ public class GerenciarMaterialController {
         } catch (Exception e) {
             exibirMensagemErro("Erro inesperado ao excluir: " + e.getMessage());
         }
+    }
+
+    @FXML
+    public void registrarMovimentacao() {
+        if (materialSelecionado == null || materialSelecionado.getIdMaterial() == null) {
+            exibirMensagemErro("Selecione um material na lista antes de registrar uma movimentação.");
+            return;
+        }
+
+        try {
+            Long idMaterial = materialSelecionado.getIdMaterial();
+            TipoMovimentacaoMaterial tipo = comboTipoMovimentacao != null ? comboTipoMovimentacao.getValue() : null;
+            BigDecimal quantidade = lerDecimal(campoQuantidadeMovimentacao.getText(), "Informe uma quantidade numérica válida para a movimentação.");
+            String motivo = campoMotivoMovimentacao.getText();
+            String observacoes = campoObservacoesMovimentacao.getText();
+
+            MovimentacaoMaterial mov = materialService.registrarMovimentacao(idMaterial, tipo, quantidade, motivo, observacoes);
+
+            limparCamposMovimentacao();
+            carregarTodos();
+            selecionarMaterialNaListaPorId(idMaterial);
+            exibirMensagemSucesso(String.format("Movimentação (%s) registrada! Saldo: %s -> %s %s",
+                    mov.getTipo(), mov.getSaldoAnterior(), mov.getSaldoAtual(), mov.getMaterial().getUnidadeMedida()));
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            exibirMensagemErro("Erro na movimentação: " + e.getMessage());
+        } catch (Exception e) {
+            exibirMensagemErro("Erro inesperado ao movimentar estoque: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void registrarPerdaDireta() {
+        if (materialSelecionado == null || materialSelecionado.getIdMaterial() == null) {
+            exibirMensagemErro("Selecione um material na lista antes de registrar uma perda.");
+            return;
+        }
+
+        try {
+            Long idMaterial = materialSelecionado.getIdMaterial();
+            BigDecimal quantidade = lerDecimal(campoQuantidadeMovimentacao.getText(), "Informe uma quantidade numérica válida para a perda.");
+            String motivo = campoMotivoMovimentacao.getText();
+            String observacoes = campoObservacoesMovimentacao.getText();
+
+            MovimentacaoMaterial perda = materialService.registrarPerda(idMaterial, quantidade, motivo, observacoes);
+
+            limparCamposMovimentacao();
+            carregarTodos();
+            selecionarMaterialNaListaPorId(idMaterial);
+            exibirMensagemSucesso(String.format("Perda registrada com sucesso! Saldo reduzido: %s -> %s %s (Motivo: %s)",
+                    perda.getSaldoAnterior(), perda.getSaldoAtual(), perda.getMaterial().getUnidadeMedida(), perda.getMotivo()));
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            exibirMensagemErro("Erro ao registrar perda: " + e.getMessage());
+        } catch (Exception e) {
+            exibirMensagemErro("Erro inesperado ao registrar perda: " + e.getMessage());
+        }
+    }
+
+    @FXML
+    public void carregarHistoricoDoSelecionado() {
+        if (listaHistoricoMovimentacoes == null) {
+            return;
+        }
+        if (materialSelecionado == null || materialSelecionado.getIdMaterial() == null) {
+            carregarHistoricoGeral();
+            return;
+        }
+        List<MovimentacaoMaterial> historico = materialService.listarMovimentacoesPorMaterial(materialSelecionado.getIdMaterial());
+        atualizarListaHistorico(historico);
+    }
+
+    @FXML
+    public void carregarHistoricoGeral() {
+        if (listaHistoricoMovimentacoes == null) {
+            return;
+        }
+        List<MovimentacaoMaterial> historico = materialService.listarMovimentacoes();
+        atualizarListaHistorico(historico);
+    }
+
+    @FXML
+    public void carregarApenasPerdas() {
+        if (listaHistoricoMovimentacoes == null) {
+            return;
+        }
+        List<MovimentacaoMaterial> perdas = (materialSelecionado != null && materialSelecionado.getIdMaterial() != null)
+                ? materialService.listarPerdasPorMaterial(materialSelecionado.getIdMaterial())
+                : materialService.listarPerdas();
+        atualizarListaHistorico(perdas);
+        exibirMensagemInfo("Exibindo histórico de perdas (" + perdas.size() + " registro(s)).");
     }
 
     @FXML
@@ -243,9 +395,30 @@ public class GerenciarMaterialController {
         campoNome.clear();
         campoPrecoUnidade.clear();
         campoUnidadeMedida.clear();
+        if (campoQuantidadeEstoqueInicial != null) {
+            campoQuantidadeEstoqueInicial.clear();
+            campoQuantidadeEstoqueInicial.setDisable(false);
+        }
+        limparCamposMovimentacao();
         listaMateriais.getSelectionModel().clearSelection();
         limparDetalhesESelecao();
+        carregarHistoricoGeral();
         exibirMensagemInfo("Formulário limpo. Pronto para novo cadastro.");
+    }
+
+    private void limparCamposMovimentacao() {
+        if (campoQuantidadeMovimentacao != null) {
+            campoQuantidadeMovimentacao.clear();
+        }
+        if (campoMotivoMovimentacao != null) {
+            campoMotivoMovimentacao.clear();
+        }
+        if (campoObservacoesMovimentacao != null) {
+            campoObservacoesMovimentacao.clear();
+        }
+        if (comboTipoMovimentacao != null) {
+            comboTipoMovimentacao.getSelectionModel().select(TipoMovimentacaoMaterial.ENTRADA);
+        }
     }
 
     @FXML
@@ -262,17 +435,20 @@ public class GerenciarMaterialController {
         labelDetalhesNome.setText("—");
         labelDetalhesPreco.setText("—");
         labelDetalhesUnidade.setText("—");
+        if (labelDetalhesEstoque != null) {
+            labelDetalhesEstoque.setText("—");
+        }
         atualizarEstadoBotoesEdicao();
     }
 
-    private BigDecimal lerPreco(String textoPreco) {
-        if (textoPreco == null || textoPreco.isBlank()) {
+    private BigDecimal lerDecimal(String texto, String mensagemErro) {
+        if (texto == null || texto.isBlank()) {
             return null;
         }
         try {
-            return new BigDecimal(textoPreco.trim().replace(",", "."));
+            return new BigDecimal(texto.trim().replace(",", "."));
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Informe um valor numérico válido para o preço por unidade.");
+            throw new IllegalArgumentException(mensagemErro);
         }
     }
 
@@ -298,12 +474,46 @@ public class GerenciarMaterialController {
         );
     }
 
+    private void atualizarListaHistorico(List<MovimentacaoMaterial> historico) {
+        if (listaHistoricoMovimentacoes == null) {
+            return;
+        }
+        listaHistoricoMovimentacoes.setItems(
+                FXCollections.observableArrayList(
+                        historico.stream().map(this::formatarMovimentacao).toList()
+                )
+        );
+    }
+
     private String formatarMaterial(Material m) {
-        return String.format("ID: %d | %s | R$ %.2f / %s",
+        BigDecimal estoque = m.getQuantidadeEstoque() != null ? m.getQuantidadeEstoque() : BigDecimal.ZERO;
+        return String.format("ID: %d | %s | R$ %.2f / %s | Estoque: %s %s",
                 m.getIdMaterial(),
                 m.getNome(),
                 m.getPrecoUnidade(),
+                m.getUnidadeMedida(),
+                estoque.toPlainString(),
                 m.getUnidadeMedida());
+    }
+
+    private String formatarMovimentacao(MovimentacaoMaterial mov) {
+        String dataStr = mov.getDataHora() != null ? mov.getDataHora().format(FORMATADOR_DATA) : "—";
+        String nomeMat = mov.getMaterial() != null ? mov.getMaterial().getNome() : "Material";
+        String un = mov.getMaterial() != null ? mov.getMaterial().getUnidadeMedida() : "";
+        String motivoStr = (mov.getMotivo() != null && !mov.getMotivo().isBlank()) ? " | Motivo: " + mov.getMotivo() : "";
+        String obsStr = (mov.getObservacoes() != null && !mov.getObservacoes().isBlank()) ? " (" + mov.getObservacoes() + ")" : "";
+        return String.format("[#%d | %s] %s — %s: %s %s (Saldo: %s -> %s %s)%s%s",
+                mov.getIdMovimentacao(),
+                dataStr,
+                nomeMat,
+                mov.getTipo(),
+                mov.getQuantidade(),
+                un,
+                mov.getSaldoAnterior(),
+                mov.getSaldoAtual(),
+                un,
+                motivoStr,
+                obsStr);
     }
 
     private void exibirMensagemSucesso(String msg) {
@@ -321,4 +531,3 @@ public class GerenciarMaterialController {
         labelStatus.setText(msg);
     }
 }
-

@@ -4,15 +4,16 @@
 -- CREATE TABLE IF NOT EXISTS: seguro rodar em todo startup, não apaga dados.
 
 CREATE TABLE IF NOT EXISTS material (
-                                        id_material     INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        nome            VARCHAR(255)    NOT NULL,
-    unidade_medida  VARCHAR(10)     NOT NULL,
-    preco_unidade   NUMERIC(10,2)   NOT NULL
-    );
+    id_material         INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome                VARCHAR(255)    NOT NULL,
+    unidade_medida      VARCHAR(10)     NOT NULL,
+    preco_unidade       NUMERIC(10,2)   NOT NULL,
+    quantidade_estoque  NUMERIC(10,2)   NOT NULL DEFAULT 0
+);
 
 CREATE TABLE IF NOT EXISTS produto (
-                                       id_produto            INTEGER PRIMARY KEY AUTOINCREMENT,
-                                       codigo                VARCHAR(50)     NOT NULL UNIQUE,
+    id_produto            INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo                VARCHAR(50)     NOT NULL UNIQUE,
     nome                  VARCHAR(255)    NOT NULL,
     descricao             VARCHAR(255),
     tipo                  VARCHAR(255)    NOT NULL CHECK (tipo IN ('PRE_PRONTO', 'PERSONALIZADO')),
@@ -21,13 +22,26 @@ CREATE TABLE IF NOT EXISTS produto (
     quantidade_estoque    INTEGER,
     prazo_producao_dias   INTEGER,
     observacoes           VARCHAR(500)
-    );
+);
 
 CREATE TABLE IF NOT EXISTS produto_material (
-                                                id_produto            BIGINT          NOT NULL,
-                                                id_material           BIGINT          NOT NULL,
-                                                quantidade_utilizada  NUMERIC(10,2)   NOT NULL,
+    id_produto            BIGINT          NOT NULL,
+    id_material           BIGINT          NOT NULL,
+    quantidade_utilizada  NUMERIC(10,2)   NOT NULL,
     PRIMARY KEY (id_produto, id_material),
     FOREIGN KEY (id_produto)  REFERENCES produto(id_produto)   ON DELETE CASCADE,
     FOREIGN KEY (id_material) REFERENCES material(id_material)
-    );
+);
+
+CREATE TABLE IF NOT EXISTS movimentacao_material (
+    id_movimentacao  INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_material      BIGINT          NOT NULL,
+    tipo             VARCHAR(20)     NOT NULL CHECK (tipo IN ('ENTRADA', 'SAIDA', 'PERDA')),
+    quantidade       NUMERIC(10,2)   NOT NULL,
+    saldo_anterior   NUMERIC(10,2)   NOT NULL,
+    saldo_atual      NUMERIC(10,2)   NOT NULL,
+    motivo           VARCHAR(255),
+    observacoes      VARCHAR(500),
+    data_hora        TIMESTAMP       NOT NULL,
+    FOREIGN KEY (id_material) REFERENCES material(id_material) ON DELETE CASCADE
+);

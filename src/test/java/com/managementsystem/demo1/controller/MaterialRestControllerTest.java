@@ -3,6 +3,7 @@ package com.managementsystem.demo1.controller;
 import com.managementsystem.demo1.BackendApplication;
 import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.repository.MaterialRepository;
+import com.managementsystem.demo1.repository.MovimentacaoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
 import com.managementsystem.demo1.model.TipoProduto;
@@ -43,8 +44,12 @@ class MaterialRestControllerTest {
     @Autowired
     private ProdutoService produtoService;
 
+    @Autowired
+    private MovimentacaoMaterialRepository movimentacaoMaterialRepository;
+
     @BeforeEach
     void setUp() {
+        movimentacaoMaterialRepository.deleteAll();
         produtoMaterialRepository.deleteAll();
         produtoRepository.deleteAll();
         materialRepository.deleteAll();
@@ -55,6 +60,11 @@ class MaterialRestControllerTest {
         material.setNome(nome);
         material.setPrecoUnidade(new BigDecimal(preco));
         material.setUnidadeMedida(unidade);
+        return materialRepository.save(material);
+    }
+
+    private Material criarMaterialComEstoque(String nome, String preco, String unidade, String estoque) {
+        Material material = new Material(nome, new BigDecimal(preco), unidade, new BigDecimal(estoque));
         return materialRepository.save(material);
     }
 
@@ -475,5 +485,330 @@ class MaterialRestControllerTest {
                 .andExpect(jsonPath("$.erro", is("Não é possível excluir o material pois ele está vinculado a um ou mais produtos.")));
 
         assertTrue(materialRepository.findById(material.getIdMaterial()).isPresent());
+    }
+
+    // =========================================================================
+    // Testes dos Endpoints de Movimentação de Material
+    // =========================================================================
+
+    @Test
+    void deveRegistrarMovimentacaoDeEntradaViaPostPorIdRetornando201() throws Exception {
+        Material material = criarMaterialComEstoque("Contas de madeira", "0.50", "un", "20.00");
+
+        String json = """
+                {
+                    "tipo": "ENTRADA",
+                    "quantidade": 30.00,
+                    "motivo": "Reposição de estoque",
+                    "observacoes": "Fornecedor A"
+                }
+                """;
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.idMovimentacao", notNullValue()))
+                .andExpect(jsonPath("$.tipo", is("ENTRADA")))
+                .andExpect(jsonPath("$.quantidade", is(30.00)))
+                .andExpect(jsonPath("$.saldoAnterior", is(20)))
+                .andExpect(jsonPath("$.saldoAtual", is(50.00)))
+                .andExpect(jsonPath("$.motivo", is("Reposição de estoque")))
+                .andExpect(jsonPath("$.observacoes", is("Fornecedor A")))
+                .andExpect(jsonPath("$.dataHora", notNullValue()));
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("50.00").compareTo(atualizado.getQuantidadeEstoque()));
+        assertEquals(1, movimentacaoMaterialRepository.count());
+    }
+
+    @Test
+    void deveRegistrarMovimentacaoDeSaidaViaPostGeralRetornando201() throws Exception {
+        Material material = criarMaterialComEstoque("Fio encerado", "1.20", "m", "15.00");
+
+        String json = """
+                {
+                    "idMaterial": %d,
+                    "tipo": "SAIDA",
+                    "quantidade": 5.50,
+                    "motivo": "Consumo em encomenda"
+                }
+                """.formatted(material.getIdMaterial());
+
+        mockMvc.perform(post("/materiais/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", is("SAIDA")))
+                .andExpect(jsonPath("$.quantidade", is(5.50)))
+                .andExpect(jsonPath("$.saldoAnterior", is(15)))
+                .andExpect(jsonPath("$.saldoAtual", is(9.50)));
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("9.50").compareTo(atualizado.getQuantidadeEstoque()));
+    }
+
+    @Test
+    void deveRetornar404AoMovimentarMaterialInexistente() throws Exception {
+        String json = """
+                {
+                    "tipo": "ENTRADA",
+                    "quantidade": 10.00
+                }
+                """;
+
+        mockMvc.perform(post("/materiais/999999/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar400AoMovimentarComCamposObrigatoriosAusentesOuQuantidadeInvalida() throws Exception {
+        Material material = criarMaterialComEstoque("Medalha", "3.00", "un", "10.00");
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Dados da movimentação são obrigatórios.")));
+
+        String jsonSemTipo = """
+                {
+                    "quantidade": 5.00
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonSemTipo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Tipo de movimentação é obrigatório.")));
+
+        String jsonQuantidadeZero = """
+                {
+                    "tipo": "ENTRADA",
+                    "quantidade": 0
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonQuantidadeZero))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Quantidade movimentada deve ser maior que zero.")));
+
+        String jsonQuantidadeNegativa = """
+                {
+                    "tipo": "ENTRADA",
+                    "quantidade": -5.00
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonQuantidadeNegativa))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Quantidade movimentada deve ser maior que zero.")));
+
+        assertEquals(0, movimentacaoMaterialRepository.count());
+    }
+
+    @Test
+    void deveRetornar400AoRealizarSaidaComSaldoInsuficientePreservandoEstoque() throws Exception {
+        Material material = criarMaterialComEstoque("Contas", "0.50", "un", "8.00");
+
+        String json = """
+                {
+                    "tipo": "SAIDA",
+                    "quantidade": 12.00,
+                    "motivo": "Retirada acima do saldo"
+                }
+                """;
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Saldo insuficiente em estoque para realizar a saída do material.")));
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("8.00").compareTo(noBanco.getQuantidadeEstoque()));
+        assertEquals(0, movimentacaoMaterialRepository.count());
+    }
+
+    // =========================================================================
+    // Testes dos Endpoints de Perda de Material
+    // =========================================================================
+
+    @Test
+    void deveRegistrarPerdaDeMaterialViaPostPorIdEAtualizarSaldo() throws Exception {
+        Material material = criarMaterialComEstoque("Contas de vidro", "0.80", "un", "50.00");
+
+        String json = """
+                {
+                    "quantidade": 7.00,
+                    "motivo": "Quebra durante manuseio",
+                    "observacoes": "Descarte imediato"
+                }
+                """;
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.idMovimentacao", notNullValue()))
+                .andExpect(jsonPath("$.tipo", is("PERDA")))
+                .andExpect(jsonPath("$.quantidade", is(7.00)))
+                .andExpect(jsonPath("$.saldoAnterior", is(50)))
+                .andExpect(jsonPath("$.saldoAtual", is(43.00)))
+                .andExpect(jsonPath("$.motivo", is("Quebra durante manuseio")))
+                .andExpect(jsonPath("$.observacoes", is("Descarte imediato")));
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("43.00").compareTo(atualizado.getQuantidadeEstoque()));
+        assertEquals(1, movimentacaoMaterialRepository.count());
+    }
+
+    @Test
+    void deveRegistrarPerdaViaPostGeralComIdMaterialNoBody() throws Exception {
+        Material material = criarMaterialComEstoque("Fita dourada", "2.50", "m", "20.00");
+
+        String json = """
+                {
+                    "idMaterial": %d,
+                    "quantidade": 3.50,
+                    "motivo": "Mancha no tecido"
+                }
+                """.formatted(material.getIdMaterial());
+
+        mockMvc.perform(post("/materiais/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.tipo", is("PERDA")))
+                .andExpect(jsonPath("$.quantidade", is(3.50)))
+                .andExpect(jsonPath("$.saldoAnterior", is(20)))
+                .andExpect(jsonPath("$.saldoAtual", is(16.50)))
+                .andExpect(jsonPath("$.motivo", is("Mancha no tecido")));
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("16.50").compareTo(atualizado.getQuantidadeEstoque()));
+    }
+
+    @Test
+    void deveRetornar404AoRegistrarPerdaParaMaterialInexistente() throws Exception {
+        String json = """
+                {
+                    "quantidade": 2.00,
+                    "motivo": "Extravio"
+                }
+                """;
+
+        mockMvc.perform(post("/materiais/999999/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deveRetornar400AoRegistrarPerdaSemMotivoOuComQuantidadeInvalidaOuSaldoInsuficiente() throws Exception {
+        Material material = criarMaterialComEstoque("Corrente prateada", "5.00", "m", "10.00");
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Dados da perda são obrigatórios.")));
+
+        String jsonSemMotivo = """
+                {
+                    "quantidade": 2.00,
+                    "motivo": "   "
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonSemMotivo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Motivo da perda é obrigatório.")));
+
+        String jsonQuantidadeInvalida = """
+                {
+                    "quantidade": 0,
+                    "motivo": "Oxidação"
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonQuantidadeInvalida))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Quantidade perdida deve ser maior que zero.")));
+
+        String jsonPerdaAcimaDoSaldo = """
+                {
+                    "quantidade": 15.00,
+                    "motivo": "Oxidação total"
+                }
+                """;
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonPerdaAcimaDoSaldo))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Saldo insuficiente em estoque para registrar a perda do material.")));
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("10.00").compareTo(noBanco.getQuantidadeEstoque()));
+        assertEquals(0, movimentacaoMaterialRepository.count());
+    }
+
+    @Test
+    void deveConsultarHistoricoDeMovimentacoesEPerdasPorMaterial() throws Exception {
+        Material material = criarMaterialComEstoque("Contas", "0.50", "un", "0.00");
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "tipo": "ENTRADA",
+                                    "quantidade": 100.00,
+                                    "motivo": "Compra inicial"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/movimentacoes")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "tipo": "SAIDA",
+                                    "quantidade": 30.00,
+                                    "motivo": "Produção de terços"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/materiais/" + material.getIdMaterial() + "/perdas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "quantidade": 5.00,
+                                    "motivo": "Defeito de fabricação"
+                                }
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/materiais/" + material.getIdMaterial() + "/movimentacoes"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].tipo", is("ENTRADA")))
+                .andExpect(jsonPath("$[1].tipo", is("SAIDA")))
+                .andExpect(jsonPath("$[2].tipo", is("PERDA")))
+                .andExpect(jsonPath("$[2].saldoAtual", is(65)));
+
+        mockMvc.perform(get("/materiais/" + material.getIdMaterial() + "/perdas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].tipo", is("PERDA")))
+                .andExpect(jsonPath("$[0].motivo", is("Defeito de fabricação")));
+
+        mockMvc.perform(get("/materiais/perdas"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)));
     }
 }
