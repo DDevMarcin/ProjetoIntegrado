@@ -630,4 +630,51 @@ class ProdutoRestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erro", containsString("Já existe outro produto cadastrado")));
     }
+
+    @Test
+    void deveRetornar400AoCadastrarProdutoComNomeDuplicado() throws Exception {
+        cadastrarProduto("P-NOME-01", "Terço de Madeira Especial", TipoProduto.PRE_PRONTO, 5, null);
+
+        String json = """
+                {
+                    "codigo": "P-NOME-02",
+                    "nome": "  terço de madeira especial  ",
+                    "descricao": "Desc",
+                    "tipo": "PRE_PRONTO",
+                    "quantidadeEstoque": 10,
+                    "calcularManualmente": true,
+                    "valorManual": 30.00,
+                    "materiais": []
+                }
+                """;
+
+        mockMvc.perform(post("/produtos")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe um produto cadastrado com o nome informado")));
+
+        assertEquals(1, produtoRepository.count());
+    }
+
+    @Test
+    void deveRetornar400AoAtualizarProdutoComNomeDuplicadoDeOutroProduto() throws Exception {
+        cadastrarProduto("P-N-01", "Terço A", TipoProduto.PRE_PRONTO, 5, null);
+        Produto p2 = cadastrarProduto("P-N-02", "Terço B", TipoProduto.PRE_PRONTO, 5, null);
+
+        String json = """
+                {
+                    "codigo": "P-N-02",
+                    "nome": "TERÇO A",
+                    "descricao": "Desc",
+                    "quantidadeEstoque": 10
+                }
+                """;
+
+        mockMvc.perform(put("/produtos/" + p2.getIdProduto())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Já existe outro produto cadastrado com o nome informado")));
+    }
 }

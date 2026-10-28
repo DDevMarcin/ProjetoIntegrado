@@ -1,5 +1,8 @@
 package com.managementsystem.demo1;
 
+import com.managementsystem.demo1.controller.CadastrarProdutoController;
+import com.managementsystem.demo1.controller.ControleEstoqueController;
+import com.managementsystem.demo1.controller.GerenciarMaterialController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -32,26 +35,44 @@ public class MainApp extends Application {
     public void start(Stage stage) throws Exception {
         TabPane tabPane = new TabPane();
 
-        // Aba 1: Gestão de Materiais (CRUD de Materiais)
+        // Aba 1: Gestão de Materiais (CRUD de Materiais, Movimentações e Perdas)
         FXMLLoader loaderMateriais = new FXMLLoader(getClass().getResource("/fxml/gerenciar-material.fxml"));
         loaderMateriais.setControllerFactory(springContext::getBean);
         Parent rootMateriais = loaderMateriais.load();
+        GerenciarMaterialController controllerMateriais = loaderMateriais.getController();
         Tab tabMateriais = new Tab("Materiais (CRUD)", rootMateriais);
         tabMateriais.setClosable(false);
+        tabMateriais.setOnSelectionChanged(e -> {
+            if (tabMateriais.isSelected() && controllerMateriais != null) {
+                controllerMateriais.carregarTodos();
+            }
+        });
 
         // Aba 2: Controle de Estoque (teste das atualizações recentes)
         FXMLLoader loaderEstoque = new FXMLLoader(getClass().getResource("/fxml/controle-estoque.fxml"));
         loaderEstoque.setControllerFactory(springContext::getBean);
         Parent rootEstoque = loaderEstoque.load();
+        ControleEstoqueController controllerEstoque = loaderEstoque.getController();
         Tab tabEstoque = new Tab("Controle de Estoque", rootEstoque);
         tabEstoque.setClosable(false);
+        tabEstoque.setOnSelectionChanged(e -> {
+            if (tabEstoque.isSelected() && controllerEstoque != null) {
+                controllerEstoque.carregarTodos();
+            }
+        });
 
         // Aba 3: Cadastro de Produtos (interface de teste original)
         FXMLLoader loaderCadastro = new FXMLLoader(getClass().getResource("/fxml/cadastro-produto.fxml"));
         loaderCadastro.setControllerFactory(springContext::getBean);
         Parent rootCadastro = loaderCadastro.load();
+        CadastrarProdutoController controllerCadastro = loaderCadastro.getController();
         Tab tabCadastro = new Tab("Cadastro de Produtos", rootCadastro);
         tabCadastro.setClosable(false);
+        tabCadastro.setOnSelectionChanged(e -> {
+            if (tabCadastro.isSelected() && controllerCadastro != null) {
+                controllerCadastro.listar();
+            }
+        });
 
         tabPane.getTabs().addAll(tabMateriais, tabEstoque, tabCadastro);
 

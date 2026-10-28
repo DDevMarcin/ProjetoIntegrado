@@ -22,6 +22,10 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     boolean existsByCodigoAndIdProdutoNot(String codigo, Long idProduto);
 
+    boolean existsByNomeIgnoreCase(String nome);
+
+    boolean existsByNomeIgnoreCaseAndIdProdutoNot(String nome, Long idProduto);
+
     @Query("SELECT COALESCE(SUM(p.quantidadeEstoque), 0) FROM Produto p WHERE p.quantidadeEstoque IS NOT NULL")
     Long sumQuantidadeEstoque();
-}
+}

@@ -2,7 +2,10 @@ package com.managementsystem.demo1.service;
 
 import com.managementsystem.demo1.BackendApplication;
 import com.managementsystem.demo1.model.Material;
+import com.managementsystem.demo1.model.MovimentacaoMaterial;
+import com.managementsystem.demo1.model.TipoMovimentacaoMaterial;
 import com.managementsystem.demo1.repository.MaterialRepository;
+import com.managementsystem.demo1.repository.MovimentacaoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoMaterialRepository;
 import com.managementsystem.demo1.repository.ProdutoRepository;
 import com.managementsystem.demo1.model.TipoProduto;
@@ -37,8 +40,12 @@ class MaterialServiceTest {
     @Autowired
     private ProdutoRepository produtoRepository;
 
+    @Autowired
+    private MovimentacaoMaterialRepository movimentacaoMaterialRepository;
+
     @BeforeEach
     void setUp() {
+        movimentacaoMaterialRepository.deleteAll();
         produtoMaterialRepository.deleteAll();
         produtoRepository.deleteAll();
         materialRepository.deleteAll();
@@ -380,5 +387,168 @@ class MaterialServiceTest {
         assertNotNull(m2.getIdMaterial());
         assertNotEquals(m1.getIdMaterial(), m2.getIdMaterial());
         assertTrue(m2.getIdMaterial() > m1.getIdMaterial());
+    }
+
+    @Test
+    void deveRegistrarMovimentacaoDeEntradaEAtualizarSaldoDoMaterial() {
+        Material material = materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un", new BigDecimal("10.00"));
+
+        MovimentacaoMaterial mov = materialService.registrarMovimentacao(
+                material.getIdMaterial(),
+                TipoMovimentacaoMaterial.ENTRADA,
+                new BigDecimal("25.50"),
+                "Compra de fornecedor",
+                "Nota fiscal 123"
+        );
+
+        assertNotNull(mov.getIdMovimentacao());
+        assertEquals(TipoMovimentacaoMaterial.ENTRADA, mov.getTipo());
+        assertEquals(0, new BigDecimal("25.50").compareTo(mov.getQuantidade()));
+        assertEquals(0, new BigDecimal("10.00").compareTo(mov.getSaldoAnterior()));
+        assertEquals(0, new BigDecimal("35.50").compareTo(mov.getSaldoAtual()));
+        assertEquals("Compra de fornecedor", mov.getMotivo());
+        assertEquals("Nota fiscal 123", mov.getObservacoes());
+        assertNotNull(mov.getDataHora());
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("35.50").compareTo(atualizado.getQuantidadeEstoque()));
+    }
+
+    @Test
+    void deveRegistrarMovimentacaoDeSaidaEAtualizarSaldoDoMaterial() {
+        Material material = materialService.salvar("Fio encerado", new BigDecimal("1.20"), "m", new BigDecimal("50.00"));
+
+        MovimentacaoMaterial mov = materialService.registrarMovimentacao(
+                material.getIdMaterial(),
+                TipoMovimentacaoMaterial.SAIDA,
+                new BigDecimal("15.00"),
+                "Uso na produção",
+                null
+        );
+
+        assertNotNull(mov.getIdMovimentacao());
+        assertEquals(TipoMovimentacaoMaterial.SAIDA, mov.getTipo());
+        assertEquals(0, new BigDecimal("50.00").compareTo(mov.getSaldoAnterior()));
+        assertEquals(0, new BigDecimal("35.00").compareTo(mov.getSaldoAtual()));
+
+        Material atualizado = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("35.00").compareTo(atualizado.getQuantidadeEstoque()));
+    }
+
+    @Test
+    void deveRejeitarSaidaComSaldoInsuficientePreservandoSaldoEHistorico() {
+        Material material = materialService.salvar("Medalha", new BigDecimal("3.00"), "un", new BigDecimal("5.00"));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                materialService.registrarMovimentacao(
+                        material.getIdMaterial(),
+                        TipoMovimentacaoMaterial.SAIDA,
+                        new BigDecimal("6.00"),
+                        "Saída maior que estoque",
+                        null
+                )
+        );
+
+        assertEquals("Saldo insuficiente em estoque para realizar a saída do material.", ex.getMessage());
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("5.00").compareTo(noBanco.getQuantidadeEstoque()));
+        assertTrue(movimentacaoMaterialRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void deveRegistrarPerdaDeMaterialEAtualizarSaldoConsistente() {
+        Material material = materialService.salvar("Contas de cristal", new BigDecimal("1.00"), "un", new BigDecimal("40.00"));
+
+        MovimentacaoMaterial perda = materialService.registrarPerda(
+                material.getIdMaterial(),
+                new BigDecimal("8.00"),
+                "Contas trincadas no transporte",
+                "Lote 04"
+        );
+
+        assertNotNull(perda.getIdMovimentacao());
+        assertEquals(TipoMovimentacaoMaterial.PERDA, perda.getTipo());
+        assertEquals(0, new BigDecimal("8.00").compareTo(perda.getQuantidade()));
+        assertEquals(0, new BigDecimal("40.00").compareTo(perda.getSaldoAnterior()));
+        assertEquals(0, new BigDecimal("32.00").compareTo(perda.getSaldoAtual()));
+        assertEquals("Contas trincadas no transporte", perda.getMotivo());
+        assertEquals("Lote 04", perda.getObservacoes());
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("32.00").compareTo(noBanco.getQuantidadeEstoque()));
+        assertEquals(1, materialService.listarPerdasPorMaterial(material.getIdMaterial()).size());
+    }
+
+    @Test
+    void deveRejeitarPerdaComSaldoInsuficienteOuSemMotivo() {
+        Material material = materialService.salvar("Fita de cetim", new BigDecimal("2.00"), "m", new BigDecimal("10.00"));
+
+        IllegalArgumentException exSemMotivo = assertThrows(IllegalArgumentException.class, () ->
+                materialService.registrarPerda(material.getIdMaterial(), new BigDecimal("2.00"), "   ", null)
+        );
+        assertEquals("Motivo da perda é obrigatório.", exSemMotivo.getMessage());
+
+        IllegalArgumentException exSaldo = assertThrows(IllegalArgumentException.class, () ->
+                materialService.registrarPerda(material.getIdMaterial(), new BigDecimal("15.00"), "Avaria por umidade", null)
+        );
+        assertEquals("Saldo insuficiente em estoque para registrar a perda do material.", exSaldo.getMessage());
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("10.00").compareTo(noBanco.getQuantidadeEstoque()));
+        assertTrue(movimentacaoMaterialRepository.findAll().isEmpty());
+    }
+
+    @Test
+    void deveManterConsistenciaEntreMultiplasMovimentacoesEPerdasSemDuplicidade() {
+        Material material = materialService.salvar("Crucifixo", new BigDecimal("4.00"), "un", BigDecimal.ZERO);
+
+        materialService.registrarMovimentacao(material.getIdMaterial(), TipoMovimentacaoMaterial.ENTRADA, new BigDecimal("50.00"), "Estoque inicial", null);
+        materialService.registrarMovimentacao(material.getIdMaterial(), TipoMovimentacaoMaterial.SAIDA, new BigDecimal("12.00"), "Produção", null);
+        materialService.registrarPerda(material.getIdMaterial(), new BigDecimal("3.00"), "Peça oxidada", null);
+
+        Material noBanco = materialRepository.findById(material.getIdMaterial()).orElseThrow();
+        assertEquals(0, new BigDecimal("35.00").compareTo(noBanco.getQuantidadeEstoque()));
+
+        List<MovimentacaoMaterial> historico = materialService.listarMovimentacoesPorMaterial(material.getIdMaterial());
+        assertEquals(3, historico.size());
+        assertEquals(0, new BigDecimal("50.00").compareTo(historico.get(0).getSaldoAtual()));
+        assertEquals(0, new BigDecimal("38.00").compareTo(historico.get(1).getSaldoAtual()));
+        assertEquals(0, new BigDecimal("35.00").compareTo(historico.get(2).getSaldoAtual()));
+
+        List<MovimentacaoMaterial> perdas = materialService.listarPerdasPorMaterial(material.getIdMaterial());
+        assertEquals(1, perdas.size());
+        assertEquals("Peça oxidada", perdas.get(0).getMotivo());
+    }
+
+    @Test
+    void naoDeveSalvarMaterialComNomeDuplicadoIgnorandoCaseEEspacos() {
+        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
+
+        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                materialService.salvar("Contas de madeira", new BigDecimal("0.80"), "cx")
+        );
+        assertTrue(ex1.getMessage().contains("Já existe um material cadastrado com o nome informado"));
+
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                materialService.salvar("   CONTAS DE MADEIRA   ", new BigDecimal("1.00"), "un")
+        );
+        assertTrue(ex2.getMessage().contains("Já existe um material cadastrado com o nome informado"));
+
+        assertEquals(1, materialRepository.count());
+    }
+
+    @Test
+    void naoDeveAtualizarMaterialComNomeDuplicadoDeOutroMaterial() {
+        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
+        Material m2 = materialService.salvar("Fio encerado", new BigDecimal("1.20"), "m");
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                materialService.atualizar(m2.getIdMaterial(), "  contas de madeira  ", new BigDecimal("1.50"), "m")
+        );
+        assertTrue(ex.getMessage().contains("Já existe outro material cadastrado com o nome informado"));
+
+        Material atualizadoMesmoNome = materialService.atualizar(m2.getIdMaterial(), "Fio encerado", new BigDecimal("2.00"), "m");
+        assertEquals(0, new BigDecimal("2.00").compareTo(atualizadoMesmoNome.getPrecoUnidade()));
     }
 }

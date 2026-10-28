@@ -1,11 +1,17 @@
 package com.managementsystem.demo1.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 
 @Entity
 @Table(name = "material")
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class Material {
 
     @Id
@@ -13,7 +19,7 @@ public class Material {
     @Column(name = "id_material")
     private Long idMaterial;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nome;
 
     @Column(name = "preco_unidade", nullable = false, precision = 10, scale = 2)
@@ -22,6 +28,9 @@ public class Material {
     @Column(name = "unidade_medida", nullable = false, length = 10)
     private String unidadeMedida;
 
+    @Column(name = "quantidade_estoque", nullable = false, precision = 10, scale = 2)
+    private BigDecimal quantidadeEstoque = BigDecimal.ZERO;
+
     public Material() {
     }
 
@@ -29,6 +38,14 @@ public class Material {
         this.nome = nome;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
+        this.quantidadeEstoque = BigDecimal.ZERO;
+    }
+
+    public Material(String nome, BigDecimal precoUnidade, String unidadeMedida, BigDecimal quantidadeEstoque) {
+        this.nome = nome;
+        this.precoUnidade = precoUnidade;
+        this.unidadeMedida = unidadeMedida;
+        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
     }
 
     public Material(Long idMaterial, String nome, BigDecimal precoUnidade, String unidadeMedida) {
@@ -36,6 +53,15 @@ public class Material {
         this.nome = nome;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
+        this.quantidadeEstoque = BigDecimal.ZERO;
+    }
+
+    public Material(Long idMaterial, String nome, BigDecimal precoUnidade, String unidadeMedida, BigDecimal quantidadeEstoque) {
+        this.idMaterial = idMaterial;
+        this.nome = nome;
+        this.precoUnidade = precoUnidade;
+        this.unidadeMedida = unidadeMedida;
+        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
     }
 
     public Long getIdMaterial() {
@@ -70,6 +96,14 @@ public class Material {
         this.precoUnidade = precoUnidade;
     }
 
+    public BigDecimal getQuantidadeEstoque() {
+        return quantidadeEstoque;
+    }
+
+    public void setQuantidadeEstoque(BigDecimal quantidadeEstoque) {
+        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -90,6 +124,7 @@ public class Material {
                 ", nome='" + nome + '\'' +
                 ", precoUnidade=" + precoUnidade +
                 ", unidadeMedida='" + unidadeMedida + '\'' +
+                ", quantidadeEstoque=" + quantidadeEstoque +
                 '}';
     }
 }

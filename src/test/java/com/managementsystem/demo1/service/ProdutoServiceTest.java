@@ -807,4 +807,48 @@ class ProdutoServiceTest {
                 produtoService.atualizar(p.getIdProduto(), "COD-UPD-NOME", "N".repeat(256), "Desc", 1, null, null)
         );
     }
+
+    @Test
+    void naoDeveCadastrarProdutoComNomeDuplicadoIgnorandoCaseEEspacos() {
+        produtoService.cadastrarComMateriais(
+                "DUP-N-01", "Terço de Cristal", "Desc",
+                TipoProduto.PRE_PRONTO, 5, null, null,
+                true, new BigDecimal("20.00"), List.of()
+        );
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.cadastrarComMateriais(
+                        "DUP-N-02", "   terço de cristal   ", "Outra Desc",
+                        TipoProduto.PRE_PRONTO, 2, null, null,
+                        true, new BigDecimal("30.00"), List.of()
+                )
+        );
+
+        assertTrue(ex.getMessage().contains("Já existe um produto cadastrado com o nome informado"));
+        assertEquals(1, produtoRepository.count());
+    }
+
+    @Test
+    void naoDeveAtualizarProdutoComNomeDuplicadoDeOutroProduto() {
+        produtoService.cadastrarComMateriais(
+                "COD-N-01", "Terço 1", "Desc",
+                TipoProduto.PRE_PRONTO, 1, null, null,
+                true, new BigDecimal("10.00"), List.of()
+        );
+
+        Produto p2 = produtoService.cadastrarComMateriais(
+                "COD-N-02", "Terço 2", "Desc",
+                TipoProduto.PRE_PRONTO, 2, null, null,
+                true, new BigDecimal("20.00"), List.of()
+        );
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(
+                        p2.getIdProduto(), "COD-N-02", "  TERÇO 1  ",
+                        "Desc", 2, null, null
+                )
+        );
+
+        assertTrue(ex.getMessage().contains("Já existe outro produto cadastrado com o nome informado"));
+    }
 }
