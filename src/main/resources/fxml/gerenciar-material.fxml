@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<ScrollPane fitToWidth="true"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.GerenciarMaterialController">
+
+    <content>
+        <VBox spacing="12">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+
+            <!-- Cabeçalho -->
+            <Label text="Gestão de Materiais (CRUD)"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+            <Label text="Interface de testes para cadastrar, consultar, atualizar e excluir materiais no banco de dados"
+                   style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
+
+            <Separator/>
+
+            <!-- Card de Totalizador -->
+            <HBox alignment="CENTER_LEFT" spacing="15"
+                  style="-fx-background-color: #EBF3FB; -fx-padding: 12 16 12 16; -fx-background-radius: 6; -fx-border-color: #C3DBF5; -fx-border-radius: 6;">
+                <Label fx:id="labelTotalMateriais"
+                       text="Total de Materiais Cadastrados: 0"
+                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #195b9d;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Recarregar Lista"
+                        onAction="#carregarTodos"
+                        style="-fx-cursor: hand;"/>
+            </HBox>
+
+            <Separator/>
+
+            <!-- Seção de Cadastro e Edição -->
+            <Label text="Formulário de Material (Criar / Atualizar / Excluir):"
+                   style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+            <GridPane hgap="10" vgap="8"
+                      style="-fx-background-color: #FAFAFA; -fx-padding: 12; -fx-border-color: #E0E0E0; -fx-border-radius: 4; -fx-background-radius: 4;">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="130" prefWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="ID (somente leitura):" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <TextField fx:id="campoIdSelecionado"
+                           promptText="Gerado automaticamente no cadastro"
+                           editable="false"
+                           disable="true"
+                           maxWidth="250"
+                           GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Nome do Material:* " GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <TextField fx:id="campoNome"
+                           promptText="Ex.: Contas de madeira (máx. 255 caracteres)"
+                           GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Preço por Unidade:* " GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <TextField fx:id="campoPrecoUnidade"
+                           promptText="Ex.: 0.50 ou 0,50"
+                           maxWidth="250"
+                           GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+                <Label text="Unidade de Medida:* " GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <TextField fx:id="campoUnidadeMedida"
+                           promptText="Ex.: un, m, cm, g, kg, cx (máx. 10 caracteres)"
+                           maxWidth="250"
+                           GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </GridPane>
+
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Button text="Cadastrar Novo (POST)"
+                        onAction="#cadastrarNovo"
+                        style="-fx-background-color: #195b9d; -fx-text-fill: white; -fx-font-weight: bold; -fx-cursor: hand;"/>
+
+                <Button fx:id="botaoAtualizar"
+                        text="Atualizar Selecionado (PUT)"
+                        onAction="#atualizarSelecionado"
+                        style="-fx-cursor: hand;"/>
+
+                <Button fx:id="botaoExcluir"
+                        text="Excluir Selecionado (DELETE)"
+                        onAction="#excluirSelecionado"
+                        style="-fx-background-color: #b91c1c; -fx-text-fill: white; -fx-cursor: hand;"/>
+
+                <Button text="Limpar Formulário"
+                        onAction="#limparFormulario"
+                        style="-fx-cursor: hand;"/>
+            </HBox>
+
+            <!-- Mensagem de Status -->
+            <Label fx:id="labelStatus"
+                   text="Pronto."
+                   wrapText="true"
+                   style="-fx-text-fill: #333; -fx-font-style: italic; -fx-padding: 4 0 4 0;"/>
+
+            <Separator/>
+
+            <!-- Seção de Filtros e Consultas (GET) -->
+            <Label text="Consultas e Filtros (GET):"
+                   style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="Nome:" prefWidth="50"/>
+                <TextField fx:id="campoFiltroNome"
+                           promptText="Ex.: madeira"
+                           HBox.hgrow="ALWAYS"
+                           onAction="#filtrarMateriais"/>
+
+                <Label text="Unidade:"/>
+                <TextField fx:id="campoFiltroUnidade"
+                           promptText="Ex.: un"
+                           prefWidth="90"
+                           onAction="#filtrarMateriais"/>
+
+                <Button text="Filtrar"
+                        onAction="#filtrarMateriais"
+                        style="-fx-cursor: hand;"/>
+            </HBox>
+
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="ID:" prefWidth="50"/>
+                <TextField fx:id="campoBuscaId"
+                           promptText="Ex.: 1"
+                           prefWidth="120"
+                           onAction="#buscarPorId"/>
+                <Button text="Buscar por ID"
+                        onAction="#buscarPorId"
+                        style="-fx-cursor: hand;"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Listar Todos"
+                        onAction="#carregarTodos"
+                        style="-fx-cursor: hand;"/>
+                <Button text="Limpar Filtros"
+                        onAction="#limparFiltros"
+                        style="-fx-cursor: hand;"/>
+            </HBox>
+
+            <Separator/>
+
+            <!-- Lista de Materiais -->
+            <Label text="Materiais Cadastrados (clique em um item para carregar no formulário):"
+                   style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+            <ListView fx:id="listaMateriais"
+                      prefHeight="180"/>
+
+            <Separator/>
+
+            <!-- Painel de Detalhes do Material Selecionado -->
+            <Label text="Detalhes do Material Selecionado:"
+                   style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+
+            <GridPane hgap="12" vgap="6"
+                      style="-fx-background-color: #FAFAFA; -fx-padding: 12; -fx-border-color: #E0E0E0; -fx-border-radius: 4; -fx-background-radius: 4;">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="130" prefWidth="140"/>
+                    <ColumnConstraints hgrow="ALWAYS"/>
+                </columnConstraints>
+
+                <Label text="ID:" GridPane.rowIndex="0" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                <Label fx:id="labelDetalhesId" text="—" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+                <Label text="Nome:" GridPane.rowIndex="1" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                <Label fx:id="labelDetalhesNome" text="—" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                <Label text="Preço por Unidade:" GridPane.rowIndex="2" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                <Label fx:id="labelDetalhesPreco" text="—" GridPane.rowIndex="2" GridPane.columnIndex="1"
+                       style="-fx-font-weight: bold; -fx-text-fill: #195b9d;"/>
+
+                <Label text="Unidade de Medida:" GridPane.rowIndex="3" GridPane.columnIndex="0" style="-fx-font-weight: bold;"/>
+                <Label fx:id="labelDetalhesUnidade" text="—" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </GridPane>
+
+        </VBox>
+    </content>
+</ScrollPane>
+
