@@ -1,55 +1,35 @@
 package com.managementsystem.demo1;
 
+import com.managementsystem.demo1.config.AppConfig;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.springframework.boot.WebApplicationType;
-import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.context.ConfigurableApplicationContext;
-
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class MainApp extends Application {
 
-    private ConfigurableApplicationContext springContext;
+    private AnnotationConfigApplicationContext springContext;
 
     @Override
     public void init() {
-        // web(NONE): usa toda a maquinaria do Spring Boot (le application.properties,
-        // configura DataSource/JPA certinho) mas NUNCA tenta subir servidor Tomcat
-        // -- isso evita o conflito com o javafx-maven-plugin.
-        // headless(false): essencial, senao o JavaFX nao consegue desenhar a tela.
-        springContext = new SpringApplicationBuilder(BackendApplication.class)
-                .web(WebApplicationType.NONE)
-                .headless(false)
-                .run();
+        // Sobe o contexto do Spring ANTES da tela abrir
+        springContext = new AnnotationConfigApplicationContext(AppConfig.class);
     }
 
     @Override
     public void start(Stage stage) throws Exception {
-        TabPane tabPane = new TabPane();
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/cadastro-produto.fxml"));
 
-        // Aba 1: Controle de Estoque (teste das atualizações recentes)
-        FXMLLoader loaderEstoque = new FXMLLoader(getClass().getResource("/fxml/controle-estoque.fxml"));
-        loaderEstoque.setControllerFactory(springContext::getBean);
-        Parent rootEstoque = loaderEstoque.load();
-        Tab tabEstoque = new Tab("Controle de Estoque", rootEstoque);
-        tabEstoque.setClosable(false);
+        // Ponto-chave: em vez do JavaFX instanciar o controller sozinho (construtor vazio),
+        // pedimos pro Spring criar o bean -> assim o @Autowired do service funciona.
+        loader.setControllerFactory(springContext::getBean);
 
-        // Aba 2: Cadastro de Produtos (interface de teste original)
-        FXMLLoader loaderCadastro = new FXMLLoader(getClass().getResource("/fxml/cadastro-produto.fxml"));
-        loaderCadastro.setControllerFactory(springContext::getBean);
-        Parent rootCadastro = loaderCadastro.load();
-        Tab tabCadastro = new Tab("Cadastro de Produtos", rootCadastro);
-        tabCadastro.setClosable(false);
+        Parent root = loader.load();
 
-        tabPane.getTabs().addAll(tabEstoque, tabCadastro);
-
-        stage.setTitle("Gestão para Artesã - Teste de Estoque e Produtos");
-        stage.setScene(new Scene(tabPane, 700, 680));
+        stage.setTitle("Gestão de Produtos - Artesã");
+        stage.setScene(new Scene(root, 600, 500));
         stage.show();
     }
 
