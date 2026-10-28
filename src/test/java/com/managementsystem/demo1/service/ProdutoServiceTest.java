@@ -713,4 +713,98 @@ class ProdutoServiceTest {
         assertNotNull(material.getIdMaterial());
         assertTrue(materialRepository.findById(material.getIdMaterial()).isPresent());
     }
+
+    @Test
+    void naoDeveCadastrarProdutoComNomeAcimaDe255Caracteres() {
+        String nomeLongo = "N".repeat(256);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.cadastrarComMateriais(
+                        "COD-256", nomeLongo, "Desc",
+                        TipoProduto.PRE_PRONTO, 1, null, null,
+                        true, new BigDecimal("10.00"), List.of()
+                )
+        );
+
+        assertEquals("Nome do produto não pode ultrapassar 255 caracteres.", ex.getMessage());
+    }
+
+    @Test
+    void naoDeveCadastrarProdutoComDescricaoAcimaDe255Caracteres() {
+        String descLonga = "D".repeat(256);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.cadastrarComMateriais(
+                        "COD-DESC-256", "Produto", descLonga,
+                        TipoProduto.PRE_PRONTO, 1, null, null,
+                        true, new BigDecimal("10.00"), List.of()
+                )
+        );
+
+        assertEquals("Descrição do produto não pode ultrapassar 255 caracteres.", ex.getMessage());
+    }
+
+    @Test
+    void naoDeveCadastrarProdutoPersonalizadoComObservacoesAcimaDe500Caracteres() {
+        String obsLonga = "O".repeat(501);
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.cadastrarComMateriais(
+                        "COD-OBS-501", "Produto Personalizado", "Desc",
+                        TipoProduto.PERSONALIZADO, null, 5, obsLonga,
+                        true, new BigDecimal("10.00"), List.of()
+                )
+        );
+
+        assertEquals("Observações do produto não podem ultrapassar 500 caracteres.", ex.getMessage());
+    }
+
+    @Test
+    void naoDeveAtualizarProdutoComIdNulo() {
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(null, "COD-01", "Nome", "Desc", 1, null, null)
+        );
+
+        assertEquals("ID do produto é obrigatório.", ex.getMessage());
+    }
+
+    @Test
+    void naoDeveAtualizarProdutoComCodigoNuloOuEmBranco() {
+        Produto p = produtoService.cadastrarComMateriais(
+                "COD-UPD-OBR", "Produto", "Desc",
+                TipoProduto.PRE_PRONTO, 1, null, null,
+                true, new BigDecimal("10.00"), List.of()
+        );
+
+        IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(p.getIdProduto(), null, "Nome", "Desc", 1, null, null)
+        );
+        assertEquals("Código do produto é obrigatório.", ex1.getMessage());
+
+        IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(p.getIdProduto(), "   ", "Nome", "Desc", 1, null, null)
+        );
+        assertEquals("Código do produto é obrigatório.", ex2.getMessage());
+    }
+
+    @Test
+    void naoDeveAtualizarProdutoComNomeNuloEmBrancoOuAcimaDe255Caracteres() {
+        Produto p = produtoService.cadastrarComMateriais(
+                "COD-UPD-NOME", "Produto", "Desc",
+                TipoProduto.PRE_PRONTO, 1, null, null,
+                true, new BigDecimal("10.00"), List.of()
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(p.getIdProduto(), "COD-UPD-NOME", null, "Desc", 1, null, null)
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(p.getIdProduto(), "COD-UPD-NOME", "   ", "Desc", 1, null, null)
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                produtoService.atualizar(p.getIdProduto(), "COD-UPD-NOME", "N".repeat(256), "Desc", 1, null, null)
+        );
+    }
 }

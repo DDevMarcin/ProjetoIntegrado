@@ -43,20 +43,14 @@ public class ProdutoService {
                                          String observacoes, boolean calcularManualmente,
                                          BigDecimal valorManual, List<ItemMaterialInput> itensMaterial) {
 
-        if (codigo == null || codigo.isBlank()) {
-            throw new IllegalArgumentException("Código do produto é obrigatório.");
-        }
-        String codigoTrim = codigo.trim();
-        if (codigoTrim.length() > 50) {
-            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
-        }
+        String codigoTrim = validarCodigoObrigatorio(codigo);
         if (produtoRepository.existsByCodigo(codigoTrim)) {
             throw new IllegalArgumentException("Já existe um produto com o código informado: " + codigoTrim);
         }
 
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("Nome do produto é obrigatório.");
-        }
+        String nomeTrim = validarNomeObrigatorio(nome);
+        String descricaoTrim = validarDescricaoOpcional(descricao);
+
         if (tipo == null) {
             throw new IllegalArgumentException("Tipo do produto é obrigatório.");
         }
@@ -69,8 +63,8 @@ public class ProdutoService {
 
         Produto produto = new Produto();
         produto.setCodigo(codigoTrim);
-        produto.setNome(nome.trim());
-        produto.setDescricao(descricao != null ? descricao.trim() : null);
+        produto.setNome(nomeTrim);
+        produto.setDescricao(descricaoTrim);
         produto.setTipo(tipo);
         produto.setValorManual(calcularManualmente);
 
@@ -83,8 +77,9 @@ public class ProdutoService {
             if (prazoProducaoDias != null && prazoProducaoDias < 0) {
                 throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
             }
+            String observacoesTrim = validarObservacoesOpcional(observacoes);
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
+            produto.setObservacoes(observacoesTrim);
         }
 
         BigDecimal valorCalculado = BigDecimal.ZERO;
@@ -164,35 +159,35 @@ public class ProdutoService {
     @Transactional
     public Produto atualizar(Long id, String codigo, String nome, String descricao, Integer quantidadeEstoque,
                              Integer prazoProducaoDias, String observacoes) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do produto é obrigatório.");
+        }
         Produto produto = buscarPorId(id);
 
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("Nome do produto é obrigatório.");
+        String codigoTrim = validarCodigoObrigatorio(codigo);
+        if (produtoRepository.existsByCodigoAndIdProdutoNot(codigoTrim, id)) {
+            throw new IllegalArgumentException("Já existe outro produto cadastrado com o código informado: " + codigoTrim);
         }
-        if (codigo != null && !codigo.isBlank()) {
-            String codigoTrim = codigo.trim();
-            if (codigoTrim.length() > 50) {
-                throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
-            }
-            if (produtoRepository.existsByCodigoAndIdProdutoNot(codigoTrim, id)) {
-                throw new IllegalArgumentException("Já existe outro produto cadastrado com o código informado: " + codigoTrim);
-            }
-            produto.setCodigo(codigoTrim);
-        }
-        produto.setNome(nome.trim());
-        produto.setDescricao(descricao != null ? descricao.trim() : null);
+
+        String nomeTrim = validarNomeObrigatorio(nome);
+        String descricaoTrim = validarDescricaoOpcional(descricao);
+
+        produto.setCodigo(codigoTrim);
+        produto.setNome(nomeTrim);
+        produto.setDescricao(descricaoTrim);
 
         if (produto.getTipo() == TipoProduto.PRE_PRONTO) {
             if (quantidadeEstoque != null && quantidadeEstoque < 0) {
                 throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
             }
-            produto.setQuantidadeEstoque(quantidadeEstoque);
+            produto.setQuantidadeEstoque(quantidadeEstoque == null ? 0 : quantidadeEstoque);
         } else {
             if (prazoProducaoDias != null && prazoProducaoDias < 0) {
                 throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
             }
+            String observacoesTrim = validarObservacoesOpcional(observacoes);
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
+            produto.setObservacoes(observacoesTrim);
         }
 
         return produtoRepository.save(produto);
@@ -207,5 +202,49 @@ public class ProdutoService {
             throw new NoSuchElementException("Produto não encontrado: id " + id);
         }
         produtoRepository.deleteById(id);
+    }
+
+    private String validarCodigoObrigatorio(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("Código do produto é obrigatório.");
+        }
+        String codigoTrim = codigo.trim();
+        if (codigoTrim.length() > 50) {
+            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+        }
+        return codigoTrim;
+    }
+
+    private String validarNomeObrigatorio(String nome) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("Nome do produto é obrigatório.");
+        }
+        String nomeTrim = nome.trim();
+        if (nomeTrim.length() > 255) {
+            throw new IllegalArgumentException("Nome do produto não pode ultrapassar 255 caracteres.");
+        }
+        return nomeTrim;
+    }
+
+    private String validarDescricaoOpcional(String descricao) {
+        if (descricao == null) {
+            return null;
+        }
+        String descricaoTrim = descricao.trim();
+        if (descricaoTrim.length() > 255) {
+            throw new IllegalArgumentException("Descrição do produto não pode ultrapassar 255 caracteres.");
+        }
+        return descricaoTrim;
+    }
+
+    private String validarObservacoesOpcional(String observacoes) {
+        if (observacoes == null) {
+            return null;
+        }
+        String observacoesTrim = observacoes.trim();
+        if (observacoesTrim.length() > 500) {
+            throw new IllegalArgumentException("Observações do produto não podem ultrapassar 500 caracteres.");
+        }
+        return observacoesTrim;
     }
 }
