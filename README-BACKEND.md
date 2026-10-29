@@ -57,108 +57,299 @@ A tabela produto_material representa a associação entre produtos e materiais.
 
 # 4. API de Materiais
 
-A API de materiais possui atualmente três operações:
+A API de materiais possui as seguintes operações:
+
+```text
+POST   /materiais
+GET    /materiais
+GET    /materiais?nome=...&unidadeMedida=...
+GET    /materiais/buscar?nome=...
+GET    /materiais/{id}
+PUT    /materiais/{id}
+DELETE /materiais/{id}
+```
+
+## 4.1 Cadastrar Material
+
+### Endpoint
 
 ```text
 POST /materiais
-GET  /materiais
-GET  /materiais/{id}
 ```
 
-# 4.1 Cadastrar Material
+### Body
 
-Endpoint
-
-```text
-POST /materiais
-```
-
-Body
-
+```json
 {
-"nome": "Contas de madeira",
-
-"precoUnidade": 0.50,
-
-"unidadeMedida": "un"
-
+  "nome": "Contas de madeira",
+  "cor": "Marrom",
+  "precoUnidade": 0.50,
+  "unidadeMedida": "un",
+  "quantidadeEstoque": 100
 }
+```
 
-Resposta esperada
+### Campos
 
-O backend retorna o material cadastrado.
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `nome` | String | Sim | Nome do material |
+| `cor` | String | Sim | Cor do material |
+| `precoUnidade` | BigDecimal | Sim | Preço por unidade de medida |
+| `unidadeMedida` | String | Sim | Unidade utilizada para controle do material |
+| `quantidadeEstoque` | BigDecimal | Não | Quantidade inicial em estoque. Caso não seja informada, o valor padrão é `0` |
 
-O status HTTP esperado é:
+### Resposta
+
+O backend retorna o material cadastrado com status:
 
 ```text
 201 Created
 ```
 
+Exemplo:
+
+```json
+{
+  "idMaterial": 1,
+  "nome": "Contas de madeira",
+  "cor": "Marrom",
+  "precoUnidade": 0.50,
+  "unidadeMedida": "un",
+  "quantidadeEstoque": 100
+}
+```
+
 # 5. Listar Materiais
-   Endpoint
+
+### Endpoint
 
 ```text
-   GET /materiais
+GET /materiais
 ```
 
 Exemplo:
 
+```bash
 curl http://localhost:8080/materiais
+```
 
-Resposta:
+### Resposta
 
-    [
-        {
-        "idMaterial": 1,
-        "nome": "Contas de madeira",
-        "precoUnidade": 0.5,
-        "unidadeMedida": "un"
-        }
-    ]
+```json
+[
+  {
+    "idMaterial": 1,
+    "nome": "Contas de madeira",
+    "cor": "Marrom",
+    "precoUnidade": 0.50,
+    "unidadeMedida": "un",
+    "quantidadeEstoque": 100
+  },
+  {
+    "idMaterial": 2,
+    "nome": "Tecido",
+    "cor": "Azul",
+    "precoUnidade": 25.50,
+    "unidadeMedida": "metro",
+    "quantidadeEstoque": 10
+  }
+]
+```
+
+Caso não existam materiais cadastrados, o backend retorna uma lista vazia:
+
+```json
+[]
+```
+
+com status:
+
+```text
+200 OK
+```
 
 # 6. Buscar Material por ID
-   Endpoint
+
+### Endpoint
 
 ```text
-   GET /materiais/{id}
+GET /materiais/{id}
 ```
 
 Exemplo:
 
+```text
 GET /materiais/1
+```
 
-Resposta:
+### Resposta
 
+```json
 {
-"idMaterial": 1,
-"nome": "Contas de madeira",
-"precoUnidade": 0.5,
-"unidadeMedida": "un"
+  "idMaterial": 1,
+  "nome": "Contas de madeira",
+  "cor": "Marrom",
+  "precoUnidade": 0.50,
+  "unidadeMedida": "un",
+  "quantidadeEstoque": 100
 }
+```
 
-Se o material não existir, o backend retorna:
+Se o material não existir:
 
 ```text
 404 Not Found
 ```
 
-# 7. Validações de Material
+# 6.1 Buscar Material por Nome
 
-O backend valida os seguintes campos:
+### Endpoint
 
 ```text
--Nome
-
-Não pode ser vazio.
-
--Preço
-
-Não pode ser nulo nem negativo.
-
--Unidade de medida
-
-Não pode ser vazia.
+GET /materiais/buscar?nome=madeira
 ```
+
+Também é possível utilizar o parâmetro na listagem:
+
+```text
+GET /materiais?nome=madeira
+```
+
+O backend procura materiais cujo nome contenha o texto informado, sem diferenciar letras maiúsculas e minúsculas.
+
+Exemplo de resposta:
+
+```json
+[
+  {
+    "idMaterial": 1,
+    "nome": "Contas de madeira",
+    "cor": "Marrom",
+    "precoUnidade": 0.50,
+    "unidadeMedida": "un",
+    "quantidadeEstoque": 100
+  }
+]
+```
+
+Caso não haja materiais correspondentes, o retorno é:
+
+```json
+[]
+```
+
+com status `200 OK`.
+
+# 6.2 Filtrar por Unidade de Medida
+
+Endpoint:
+
+```text
+GET /materiais?unidadeMedida=un
+```
+
+Também é possível combinar filtros:
+
+```text
+GET /materiais?nome=contas&unidadeMedida=un
+```
+
+# 7. Validações de Material
+
+O backend valida os seguintes campos antes de persistir o material:
+
+```text
+Nome
+- Obrigatório.
+- Não pode ser nulo ou em branco.
+- Tamanho máximo de 255 caracteres.
+
+Cor
+- Obrigatória.
+- Não pode ser nula ou em branco.
+- Tamanho máximo de 50 caracteres.
+
+Preço
+- Obrigatório.
+- Não pode ser nulo.
+- Não pode ser negativo.
+
+Unidade de medida
+- Obrigatória.
+- Não pode ser nula ou em branco.
+- Tamanho máximo de 10 caracteres.
+
+Quantidade em estoque
+- Caso não seja informada no cadastro, assume o valor 0.
+```
+
+# 7.1 Atualizar Material
+
+### Endpoint
+
+```text
+PUT /materiais/{id}
+```
+
+Exemplo:
+
+```text
+PUT /materiais/1
+```
+
+### Body
+
+```json
+{
+  "nome": "Contas de madeira nobre",
+  "cor": "Marrom escuro",
+  "precoUnidade": 0.75,
+  "unidadeMedida": "un"
+}
+```
+
+### Resposta
+
+Retorna o material atualizado com status:
+
+```text
+200 OK
+```
+
+Se o ID não existir:
+
+```text
+404 Not Found
+```
+
+# 7.2 Excluir Material
+
+### Endpoint
+
+```text
+DELETE /materiais/{id}
+```
+
+Exemplo:
+
+```text
+DELETE /materiais/1
+```
+
+Se excluído com sucesso:
+
+```text
+204 No Content
+```
+
+Se o material não existir:
+
+```text
+404 Not Found
+```
+
+Se o material estiver vinculado a um ou mais produtos por meio de `produto_material`, a exclusão é impedida para preservar a integridade dos dados.
 # 8. API de Produtos
 
 A API de produtos possui atualmente:
@@ -543,3 +734,96 @@ Se foi excluido com sucesso:
 ```text
 204 No Content
 ```
+
+# 23. API de Controle de Estoque
+
+A API de Controle de Estoque permite consultar e gerenciar os produtos sob controle de estoque físico (`tipo = PRE_PRONTO`). Produtos do tipo `PERSONALIZADO` não possuem estoque (são produzidos sob encomenda) e, portanto, não constam neste recurso.
+
+As operações disponíveis são:
+
+```text
+GET /estoque
+GET /estoque?nome=...
+GET /estoque/buscar?nome=...
+GET /estoque/{id}
+GET /estoque/total
+```
+
+> **Nota de compatibilidade:** As rotas `/produtos/estoque` e `/estoque/produtos` também respondem com o mesmo comportamento.
+
+## 23.1 Listar Produtos no Estoque
+
+Endpoint:
+
+```text
+GET /estoque
+```
+
+Exemplo:
+
+```text
+curl http://localhost:8080/estoque
+```
+
+Retorna a lista de produtos pré-prontos com suas respectivas quantidades em estoque e detalhes.
+
+Caso não haja produtos no estoque, retorna lista vazia (`[]`) com status `200 OK`.
+
+## 23.2 Buscar Produto no Estoque por Nome
+
+Endpoint via parâmetro:
+
+```text
+GET /estoque?nome=madeira
+```
+
+Endpoint via rota dedicada:
+
+```text
+GET /estoque/buscar?nome=madeira
+```
+
+O backend pesquisa produtos pré-prontos cujo nome contenha o termo informado (insensível a maiúsculas/minúsculas).
+
+Se o termo for vazio ou em branco, retorna todos os produtos do estoque. Se não houver correspondência, retorna `[]` com status `200 OK`.
+
+## 23.3 Buscar Produto no Estoque por ID
+
+Endpoint:
+
+```text
+GET /estoque/{id}
+```
+
+Exemplo:
+
+```text
+GET /estoque/1
+```
+
+- Se o produto existir e pertencer ao controle de estoque (`tipo = PRE_PRONTO`), retorna `200 OK` com os dados do produto.
+- Se o produto não existir ou pertencer à categoria personalizada (fora do contexto de estoque), retorna:
+
+```text
+404 Not Found
+```
+
+## 23.4 Consultar Total em Estoque
+
+Endpoint:
+
+```text
+GET /estoque/total
+```
+
+(Ou `GET /estoque/total-estoque`)
+
+Resposta:
+
+```json
+{
+  "total": 25
+}
+```
+
+Retorna a soma das quantidades em estoque de todos os produtos sob controle de estoque.
