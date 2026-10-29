@@ -66,8 +66,14 @@ class ProdutoRestControllerTest {
     }
 
     private Material criarMaterial(String nome, String preco, String unidade) {
-        Material m = new Material(nome, new BigDecimal(preco), unidade);
-        return materialRepository.save(m);
+        Material material = new Material(
+                nome,
+                "Natural",
+                new BigDecimal(preco),
+                unidade
+        );
+
+        return materialRepository.save(material);
     }
 
     @Test

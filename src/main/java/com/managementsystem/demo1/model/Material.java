@@ -19,8 +19,11 @@ public class Material {
     @Column(name = "id_material")
     private Long idMaterial;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String nome;
+
+    @Column(nullable = false, length = 50)
+    private String cor;
 
     @Column(name = "preco_unidade", nullable = false, precision = 10, scale = 2)
     private BigDecimal precoUnidade;
@@ -34,34 +37,44 @@ public class Material {
     public Material() {
     }
 
-    public Material(String nome, BigDecimal precoUnidade, String unidadeMedida) {
+    public Material(String nome, String cor, BigDecimal precoUnidade, String unidadeMedida) {
         this.nome = nome;
+        this.cor = cor;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
         this.quantidadeEstoque = BigDecimal.ZERO;
     }
 
-    public Material(String nome, BigDecimal precoUnidade, String unidadeMedida, BigDecimal quantidadeEstoque) {
+    public Material(String nome, String cor, BigDecimal precoUnidade,
+                    String unidadeMedida, BigDecimal quantidadeEstoque) {
         this.nome = nome;
+        this.cor = cor;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
-        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
+        this.quantidadeEstoque =
+                quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
     }
 
-    public Material(Long idMaterial, String nome, BigDecimal precoUnidade, String unidadeMedida) {
+    public Material(Long idMaterial, String nome, String cor,
+                    BigDecimal precoUnidade, String unidadeMedida) {
         this.idMaterial = idMaterial;
         this.nome = nome;
+        this.cor = cor;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
         this.quantidadeEstoque = BigDecimal.ZERO;
     }
 
-    public Material(Long idMaterial, String nome, BigDecimal precoUnidade, String unidadeMedida, BigDecimal quantidadeEstoque) {
+    public Material(Long idMaterial, String nome, String cor,
+                    BigDecimal precoUnidade, String unidadeMedida,
+                    BigDecimal quantidadeEstoque) {
         this.idMaterial = idMaterial;
         this.nome = nome;
+        this.cor = cor;
         this.precoUnidade = precoUnidade;
         this.unidadeMedida = unidadeMedida;
-        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
+        this.quantidadeEstoque =
+                quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
     }
 
     public Long getIdMaterial() {
@@ -80,12 +93,12 @@ public class Material {
         this.nome = nome;
     }
 
-    public String getUnidadeMedida() {
-        return unidadeMedida;
+    public String getCor() {
+        return cor;
     }
 
-    public void setUnidadeMedida(String unidadeMedida) {
-        this.unidadeMedida = unidadeMedida;
+    public void setCor(String cor) {
+        this.cor = cor;
     }
 
     public BigDecimal getPrecoUnidade() {
@@ -96,19 +109,30 @@ public class Material {
         this.precoUnidade = precoUnidade;
     }
 
+    public String getUnidadeMedida() {
+        return unidadeMedida;
+    }
+
+    public void setUnidadeMedida(String unidadeMedida) {
+        this.unidadeMedida = unidadeMedida;
+    }
+
     public BigDecimal getQuantidadeEstoque() {
         return quantidadeEstoque;
     }
 
     public void setQuantidadeEstoque(BigDecimal quantidadeEstoque) {
-        this.quantidadeEstoque = quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
+        this.quantidadeEstoque =
+                quantidadeEstoque != null ? quantidadeEstoque : BigDecimal.ZERO;
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
+
         Material material = (Material) o;
+
         return idMaterial != null && idMaterial.equals(material.idMaterial);
     }
 
@@ -122,6 +146,7 @@ public class Material {
         return "Material{" +
                 "idMaterial=" + idMaterial +
                 ", nome='" + nome + '\'' +
+                ", cor='" + cor + '\'' +
                 ", precoUnidade=" + precoUnidade +
                 ", unidadeMedida='" + unidadeMedida + '\'' +
                 ", quantidadeEstoque=" + quantidadeEstoque +
