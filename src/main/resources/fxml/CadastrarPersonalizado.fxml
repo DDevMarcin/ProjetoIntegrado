@@ -24,7 +24,7 @@
                     <Label text="Cadastrar Produto Personalizado"
                            style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
                     <Label text="Produto feito sob encomenda — preencha as informações abaixo"
-                           style="-fx-font-size: 13px; -fx-text-fill: #999;"/>
+                           style="-fx-font-size: 15px; -fx-text-fill: #999;"/>
                 </VBox>
             </HBox>
         </VBox>
@@ -140,7 +140,7 @@
 
                         <!-- Status / feedback -->
                         <Label fx:id="labelStatus" wrapText="true"
-                               style="-fx-font-size: 12px;"/>
+                               style="-fx-font-size: 15px;"/>
 
                         <!-- Botões finais -->
                         <HBox spacing="12" alignment="CENTER_RIGHT"
@@ -223,7 +223,7 @@
                 <HBox alignment="CENTER">
                     <Label text="Produto Personalizado"
                            style="-fx-background-color: #FFC1D6; -fx-background-radius: 20;
-                                  -fx-text-fill: #8F031E; -fx-font-size: 11px;
+                                  -fx-text-fill: #8F031E; -fx-font-size: 15px;
                                   -fx-font-weight: bold; -fx-padding: 4 14 4 14;"/>
                 </HBox>
 

@@ -174,7 +174,7 @@ public class CadastrarPreProntoController {
         tag.getStyleClass().add("material-tag-removivel");
 
         Label label = new Label(texto);
-        label.setStyle("-fx-text-fill: #8F031E; -fx-font-size: 12px; -fx-font-weight: bold;");
+        label.setStyle("-fx-text-fill: #8F031E; -fx-font-size: 15px; -fx-font-weight: bold;");
 
         tag.getChildren().add(label);
 

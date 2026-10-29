@@ -203,7 +203,7 @@ public class ProdutosController {
             }
         } else {
             Label sem = new Label("Nenhum material registrado.");
-            sem.setStyle("-fx-text-fill: #aaa; -fx-font-size: 12px;");
+            sem.setStyle("-fx-text-fill: #aaa; -fx-font-size: 15px;");
             painelMateriais.getChildren().add(sem);
         }
 

@@ -25,7 +25,7 @@
                            text="Editar Produto"
                            style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
                     <Label text="Atualize os campos abaixo"
-                           style="-fx-font-size: 13px; -fx-text-fill: #999;"/>
+                           style="-fx-font-size: 15px; -fx-text-fill: #999;"/>
                 </VBox>
             </HBox>
         </VBox>
@@ -113,7 +113,7 @@
                         <!-- Status / feedback -->
                         <Label fx:id="labelStatus"
                                wrapText="true"
-                               style="-fx-font-size: 13px;"/>
+                               style="-fx-font-size: 15px;"/>
 
                         <!-- Botões finais -->
                         <HBox spacing="12" alignment="CENTER_RIGHT"

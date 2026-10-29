@@ -91,7 +91,7 @@ public class MainLayoutController {
         } catch (Exception e) {
             e.printStackTrace();
             javafx.scene.control.Label erro = new javafx.scene.control.Label("Erro ao abrir edição:\n" + e.getMessage());
-            erro.setStyle("-fx-text-fill: #D31946; -fx-font-size: 13px; -fx-padding: 20;");
+            erro.setStyle("-fx-text-fill: #D31946; -fx-font-size: 15px; -fx-padding: 20;");
             contentArea.getChildren().setAll(erro);
         }
     }
