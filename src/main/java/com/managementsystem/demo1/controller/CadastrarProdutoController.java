@@ -10,6 +10,7 @@ import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.util.StringConverter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -17,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Component
+@Scope("prototype")
 public class CadastrarProdutoController {
 
     @FXML
@@ -66,6 +68,7 @@ public class CadastrarProdutoController {
     public void initialize() {
         carregarTipos();
         carregarMateriaisDisponiveis();
+        comboMaterial.setOnShowing(event -> carregarMateriaisDisponiveis());
         atualizarListaProdutos();
 
         campoPrazoProducao.setDisable(true);
@@ -146,6 +149,13 @@ public class CadastrarProdutoController {
         if (material == null) {
             labelStatus.setText(
                     "Selecione um material antes de adicionar."
+            );
+            return;
+        }
+
+        if (materiaisEscolhidos.stream().anyMatch(m -> m.getIdMaterial().equals(material.getIdMaterial()))) {
+            labelStatus.setText(
+                    "Erro: Este material já foi adicionado à composição do produto."
             );
             return;
         }
@@ -347,7 +357,7 @@ public class CadastrarProdutoController {
                     );
 
             labelStatus.setText(
-                    "Produto salvo com sucesso! "
+                    "PRODUTO SALVO! "
                             + "Valor: R$ "
                             + produto.getValor()
             );
