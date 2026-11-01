@@ -11,6 +11,7 @@ import java.util.List;
  */
 @Entity
 @Table(name = "produto")
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class Produto {
 
     @Id
@@ -21,7 +22,7 @@ public class Produto {
     @Column(nullable = false, unique = true, length = 50)
     private String codigo;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String nome;
 
     private String descricao;
@@ -49,7 +50,7 @@ public class Produto {
     @Column(length = 500)
     private String observacoes;
 
-    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "produto", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private List<ProdutoMaterial> materiaisUtilizados = new ArrayList<>();
 
     public Produto() {

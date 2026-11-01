@@ -4,6 +4,7 @@ import com.managementsystem.demo1.model.Produto;
 import com.managementsystem.demo1.service.ProdutoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.List;
 import java.util.Map;
@@ -55,5 +56,10 @@ public class EstoqueRestController {
     @GetMapping({"/total", "/total-estoque"})
     public Map<String, Integer> totalEmEstoque() {
         return Map.of("total", produtoService.totalEmEstoque());
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> tratarIdInvalido(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", "Identificador de produto inválido."));
     }
 }

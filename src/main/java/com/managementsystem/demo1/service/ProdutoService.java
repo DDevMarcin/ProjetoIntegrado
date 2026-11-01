@@ -43,20 +43,22 @@ public class ProdutoService {
                                          String observacoes, boolean calcularManualmente,
                                          BigDecimal valorManual, List<ItemMaterialInput> itensMaterial) {
 
-        if (codigo == null || codigo.isBlank()) {
-            throw new IllegalArgumentException("Código do produto é obrigatório.");
-        }
-        String codigoTrim = codigo.trim();
-        if (codigoTrim.length() > 50) {
-            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
-        }
-        if (produtoRepository.existsByCodigo(codigoTrim)) {
-            throw new IllegalArgumentException("Já existe um produto com o código informado: " + codigoTrim);
+        String codigoTrim = validarCodigoObrigatorio(codigo);
+
+        // Verifica se o código já está em uso
+        produtoRepository.findByCodigo(codigoTrim).ifPresent(existente -> {
+            throw new IllegalArgumentException(
+                "O código \"" + codigoTrim + "\" já pertence ao produto \"" + existente.getNome() + "\"."
+            );
+        });
+
+        String nomeTrim = validarNomeObrigatorio(nome);
+        if (existeProdutoComMesmoNome(nomeTrim)) {
+            throw new IllegalArgumentException("Já existe um produto cadastrado com o nome informado: " + nomeTrim);
         }
 
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("Nome do produto é obrigatório.");
-        }
+        String descricaoTrim = validarDescricaoOpcional(descricao);
+
         if (tipo == null) {
             throw new IllegalArgumentException("Tipo do produto é obrigatório.");
         }
@@ -69,8 +71,8 @@ public class ProdutoService {
 
         Produto produto = new Produto();
         produto.setCodigo(codigoTrim);
-        produto.setNome(nome.trim());
-        produto.setDescricao(descricao != null ? descricao.trim() : null);
+        produto.setNome(nomeTrim);
+        produto.setDescricao(descricaoTrim);
         produto.setTipo(tipo);
         produto.setValorManual(calcularManualmente);
 
@@ -83,8 +85,9 @@ public class ProdutoService {
             if (prazoProducaoDias != null && prazoProducaoDias < 0) {
                 throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
             }
+            String observacoesTrim = validarObservacoesOpcional(observacoes);
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
+            produto.setObservacoes(observacoesTrim);
         }
 
         BigDecimal valorCalculado = BigDecimal.ZERO;
@@ -106,7 +109,6 @@ public class ProdutoService {
                 Material material = materialRepository.findById(idMaterial)
                         .orElseThrow(() -> new NoSuchElementException(
                                 "Material não encontrado: id " + idMaterial));
-
                 valorCalculado = valorCalculado.add(material.getPrecoUnidade().multiply(item.quantidadeUtilizada()));
                 vinculos.add(new ProdutoMaterial(produto, material, item.quantidadeUtilizada()));
             }
@@ -118,23 +120,28 @@ public class ProdutoService {
         return produtoRepository.save(produto);
     }
 
+    @Transactional(readOnly = true)
     public List<Produto> listarTodos() {
-        return produtoRepository.findAll();
+        return produtoRepository.findAllWithMateriais();
     }
 
+    @Transactional(readOnly = true)
     public Produto buscarPorId(Long id) {
         if (id == null) {
             throw new NoSuchElementException("ID do produto não informado.");
         }
-        return produtoRepository.findById(id)
+        return produtoRepository.findByIdWithMateriais(id)
                 .orElseThrow(() -> new NoSuchElementException("Produto não encontrado: id " + id));
     }
 
+    @Transactional(readOnly = true)
     public List<Produto> buscarPorNome(String nome) {
         if (nome == null || nome.isBlank()) {
             return listarTodos();
         }
-        return produtoRepository.findByNomeContainingIgnoreCase(nome.trim());
+        return produtoRepository.findAllWithMateriais().stream()
+                .filter(p -> p.getNome().toLowerCase().contains(nome.trim().toLowerCase()))
+                .toList();
     }
 
     public List<Produto> listarEstoque() {
@@ -155,7 +162,7 @@ public class ProdutoService {
         return produtoRepository.findByIdProdutoAndTipo(id, TipoProduto.PRE_PRONTO);
     }
 
-    /** Soma a quantidade em estoque de todos os produtos PRE_PRONTO (rodapé "Total de Produtos: X" do protótipo). */
+    /** Soma a quantidade em estoque de todos os produtos PRE_PRONTO. */
     public int totalEmEstoque() {
         Long total = produtoRepository.sumQuantidadeEstoque();
         return total != null ? total.intValue() : 0;
@@ -164,35 +171,45 @@ public class ProdutoService {
     @Transactional
     public Produto atualizar(Long id, String codigo, String nome, String descricao, Integer quantidadeEstoque,
                              Integer prazoProducaoDias, String observacoes) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID do produto é obrigatório.");
+        }
         Produto produto = buscarPorId(id);
 
-        if (nome == null || nome.isBlank()) {
-            throw new IllegalArgumentException("Nome do produto é obrigatório.");
-        }
-        if (codigo != null && !codigo.isBlank()) {
-            String codigoTrim = codigo.trim();
-            if (codigoTrim.length() > 50) {
-                throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+        String codigoTrim = validarCodigoObrigatorio(codigo);
+
+        // Verifica se o código já pertence a outro produto
+        produtoRepository.findByCodigo(codigoTrim).ifPresent(existente -> {
+            if (!existente.getIdProduto().equals(id)) {
+                throw new IllegalArgumentException(
+                    "O código \"" + codigoTrim + "\" já pertence ao produto \"" + existente.getNome() + "\"."
+                );
             }
-            if (produtoRepository.existsByCodigoAndIdProdutoNot(codigoTrim, id)) {
-                throw new IllegalArgumentException("Já existe outro produto cadastrado com o código informado: " + codigoTrim);
-            }
-            produto.setCodigo(codigoTrim);
+        });
+
+        String nomeTrim = validarNomeObrigatorio(nome);
+        if (existeOutroProdutoComMesmoNome(nomeTrim, id)) {
+            throw new IllegalArgumentException("Já existe outro produto cadastrado com o nome informado: " + nomeTrim);
         }
-        produto.setNome(nome.trim());
-        produto.setDescricao(descricao != null ? descricao.trim() : null);
+
+        String descricaoTrim = validarDescricaoOpcional(descricao);
+
+        produto.setCodigo(codigoTrim);
+        produto.setNome(nomeTrim);
+        produto.setDescricao(descricaoTrim);
 
         if (produto.getTipo() == TipoProduto.PRE_PRONTO) {
             if (quantidadeEstoque != null && quantidadeEstoque < 0) {
                 throw new IllegalArgumentException("A quantidade em estoque não pode ser negativa.");
             }
-            produto.setQuantidadeEstoque(quantidadeEstoque);
+            produto.setQuantidadeEstoque(quantidadeEstoque == null ? 0 : quantidadeEstoque);
         } else {
             if (prazoProducaoDias != null && prazoProducaoDias < 0) {
                 throw new IllegalArgumentException("O prazo de produção não pode ser negativo.");
             }
+            String observacoesTrim = validarObservacoesOpcional(observacoes);
             produto.setPrazoProducaoDias(prazoProducaoDias);
-            produto.setObservacoes(observacoes != null ? observacoes.trim() : null);
+            produto.setObservacoes(observacoesTrim);
         }
 
         return produtoRepository.save(produto);
@@ -207,5 +224,55 @@ public class ProdutoService {
             throw new NoSuchElementException("Produto não encontrado: id " + id);
         }
         produtoRepository.deleteById(id);
+    }
+
+    // ── Helpers de validação ───────────────────────────────────────────────
+
+    private String validarCodigoObrigatorio(String codigo) {
+        if (codigo == null || codigo.isBlank()) {
+            throw new IllegalArgumentException("Código do produto é obrigatório.");
+        }
+        String codigoTrim = codigo.trim();
+        if (codigoTrim.length() > 50) {
+            throw new IllegalArgumentException("Código do produto não pode ultrapassar 50 caracteres.");
+        }
+        return codigoTrim;
+    }
+
+    private String validarNomeObrigatorio(String nome) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("Nome do produto é obrigatório.");
+        }
+        String nomeTrim = nome.trim();
+        if (nomeTrim.length() > 255) {
+            throw new IllegalArgumentException("Nome do produto não pode ultrapassar 255 caracteres.");
+        }
+        return nomeTrim;
+    }
+
+    private String validarDescricaoOpcional(String descricao) {
+        if (descricao == null) return null;
+        String descricaoTrim = descricao.trim();
+        if (descricaoTrim.length() > 255) {
+            throw new IllegalArgumentException("Descrição do produto não pode ultrapassar 255 caracteres.");
+        }
+        return descricaoTrim;
+    }
+
+    private String validarObservacoesOpcional(String observacoes) {
+        if (observacoes == null) return null;
+        String observacoesTrim = observacoes.trim();
+        if (observacoesTrim.length() > 500) {
+            throw new IllegalArgumentException("Observações do produto não podem ultrapassar 500 caracteres.");
+        }
+        return observacoesTrim;
+    }
+
+    private boolean existeProdutoComMesmoNome(String nomeTrim) {
+        return produtoRepository.existsByNomeIgnoreCase(nomeTrim);
+    }
+
+    private boolean existeOutroProdutoComMesmoNome(String nomeTrim, Long idIgnorado) {
+        return produtoRepository.existsByNomeIgnoreCaseAndIdProdutoNot(nomeTrim, idIgnorado);
     }
 }

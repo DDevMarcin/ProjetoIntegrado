@@ -1,5 +1,4 @@
 package com.managementsystem.demo1;
-
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -9,11 +8,7 @@ import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
-
 public class MainApp extends Application {
-
     private ConfigurableApplicationContext springContext;
 
     @Override
@@ -30,26 +25,20 @@ public class MainApp extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        TabPane tabPane = new TabPane();
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/MainLayout.fxml"));
+        loader.setControllerFactory(springContext::getBean);
+        Parent root = loader.load();
 
-        // Aba 1: Controle de Estoque (teste das atualizações recentes)
-        FXMLLoader loaderEstoque = new FXMLLoader(getClass().getResource("/fxml/controle-estoque.fxml"));
-        loaderEstoque.setControllerFactory(springContext::getBean);
-        Parent rootEstoque = loaderEstoque.load();
-        Tab tabEstoque = new Tab("Controle de Estoque", rootEstoque);
-        tabEstoque.setClosable(false);
-
-        // Aba 2: Cadastro de Produtos (interface de teste original)
-        FXMLLoader loaderCadastro = new FXMLLoader(getClass().getResource("/fxml/cadastro-produto.fxml"));
-        loaderCadastro.setControllerFactory(springContext::getBean);
-        Parent rootCadastro = loaderCadastro.load();
-        Tab tabCadastro = new Tab("Cadastro de Produtos", rootCadastro);
-        tabCadastro.setClosable(false);
-
-        tabPane.getTabs().addAll(tabEstoque, tabCadastro);
-
-        stage.setTitle("Gestão para Artesã - Teste de Estoque e Produtos");
-        stage.setScene(new Scene(tabPane, 700, 680));
+        Scene scene = new Scene(root, 1024, 660);
+        // Aplica o CSS global
+        var css = getClass().getResource("/css/app.css");
+        if (css != null) {
+            scene.getStylesheets().add(css.toExternalForm());
+        }
+        stage.setTitle("Gestão - Artesã");
+        stage.setScene(scene);
+        stage.setMinWidth(1440);
+        stage.setMinHeight(900);
         stage.show();
     }
 

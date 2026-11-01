@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      spacing="0">
+
+    <padding>
+        <Insets top="36" right="36" bottom="36" left="36"/>
+    </padding>
+
+    <Label text="Em construção"
+           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+
+    <Label text="Esta seção ainda será implementada."
+           style="-fx-font-size: 14px; -fx-text-fill: #888; -fx-padding: 6 0 0 0;"/>
+
+</VBox>

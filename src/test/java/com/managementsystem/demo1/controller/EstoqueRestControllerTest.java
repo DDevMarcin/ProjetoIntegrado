@@ -188,6 +188,13 @@ class EstoqueRestControllerTest {
     }
 
     @Test
+    void deveRetornar400AoBuscarProdutoDoEstoqueComIdEmFormatoInvalido() throws Exception {
+        mockMvc.perform(get("/estoque/id-invalido"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Identificador de produto inválido.")));
+    }
+
+    @Test
     void deveRetornar404AoBuscarProdutoPersonalizadoPeloEndpointDeEstoque() throws Exception {
         Produto personalizado = criarProdutoPersonalizado("PER-001", "Terço especial", 5, "75.00");
 
