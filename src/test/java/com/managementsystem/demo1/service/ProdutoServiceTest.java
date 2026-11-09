@@ -47,6 +47,7 @@ class ProdutoServiceTest {
 
         Material madeira = new Material();
         madeira.setNome("Contas de madeira");
+        madeira.setCor("Marrom");
         madeira.setUnidadeMedida("un");
         madeira.setPrecoUnidade(new BigDecimal("0.50"));
         madeira = materialRepository.save(madeira);
@@ -104,6 +105,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Crucifixo");
+        material.setCor("Prata");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("3.00"));
         material = materialRepository.save(material);
@@ -134,6 +136,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Crucifixo");
+        material.setCor("Prata");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("3.00"));
         material = materialRepository.save(material);
@@ -230,6 +233,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Conta azul");
+        material.setCor("Azul");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("0.50"));
         material = materialRepository.save(material);
@@ -268,6 +272,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Conta vermelha");
+        material.setCor("Vermelha");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("0.50"));
         material = materialRepository.save(material);
@@ -307,6 +312,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Conta branca");
+        material.setCor("Branca");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("0.40"));
         material = materialRepository.save(material);
@@ -353,6 +359,7 @@ class ProdutoServiceTest {
 
         Material material = new Material();
         material.setNome("Medalha");
+        material.setCor("Dourada");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("2.00"));
         material = materialRepository.save(material);
@@ -598,6 +605,7 @@ class ProdutoServiceTest {
     void naoDeveCadastrarProdutoComMaterialDuplicadoNaComposicao() {
         Material material = new Material();
         material.setNome("Miçanga");
+        material.setCor("Colorida");
         material.setUnidadeMedida("un");
         material.setPrecoUnidade(new BigDecimal("0.10"));
         material = materialRepository.save(material);
@@ -695,6 +703,7 @@ class ProdutoServiceTest {
     void deveRemoverVinculosProdutoMaterialAoExcluirProduto() {
         Material material = new Material();
         material.setNome("Fio de nylon");
+        material.setCor("Transparente");
         material.setUnidadeMedida("m");
         material.setPrecoUnidade(new BigDecimal("1.00"));
         material = materialRepository.save(material);

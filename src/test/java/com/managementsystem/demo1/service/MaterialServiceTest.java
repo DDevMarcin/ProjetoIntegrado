@@ -54,6 +54,7 @@ class MaterialServiceTest {
     private Material criarMaterial(String nome, String preco, String unidade) {
         Material material = new Material();
         material.setNome(nome);
+        material.setCor("Natural");
         material.setPrecoUnidade(new BigDecimal(preco));
         material.setUnidadeMedida(unidade);
         return materialRepository.save(material);
@@ -181,7 +182,7 @@ class MaterialServiceTest {
 
     @Test
     void deveSalvarMaterialValidoComSucesso() {
-        Material material = new Material("Contas de madeira", new BigDecimal("0.50"), "un");
+        Material material = new Material("Contas de madeira", "Natural", new BigDecimal("0.50"), "un");
 
         Material salvo = materialService.salvar(material);
 
@@ -200,17 +201,18 @@ class MaterialServiceTest {
 
     @Test
     void deveSalvarMaterialComEspacosEmBrancoEFazerTrim() {
-        Material material = new Material("   Contas de cristal   ", new BigDecimal("1.50"), "   un   ");
+        Material material = new Material("   Contas de cristal   ", "  Transparente  ", new BigDecimal("1.50"), "   un   ");
 
         Material salvo = materialService.salvar(material);
 
         assertEquals("Contas de cristal", salvo.getNome());
+        assertEquals("Transparente", salvo.getCor());
         assertEquals("un", salvo.getUnidadeMedida());
     }
 
     @Test
     void deveSalvarMaterialUsandoSobrecargaDeMetodo() {
-        Material salvo = materialService.salvar("Fio de nylon", new BigDecimal("2.30"), "m");
+        Material salvo = materialService.salvar("Fio de nylon", "Transparente", new BigDecimal("2.30"), "m");
 
         assertNotNull(salvo.getIdMaterial());
         assertEquals("Fio de nylon", salvo.getNome());
@@ -220,9 +222,9 @@ class MaterialServiceTest {
 
     @Test
     void deveAtualizarMaterialExistenteComSucesso() {
-        Material salvo = materialService.salvar(new Material("Fio de nylon", new BigDecimal("2.30"), "m"));
+        Material salvo = materialService.salvar(new Material("Fio de nylon", "Transparente", new BigDecimal("2.30"), "m"));
 
-        Material atualizado = materialService.atualizar(salvo.getIdMaterial(), "Fio de nylon grosso", new BigDecimal("3.00"), "m");
+        Material atualizado = materialService.atualizar(salvo.getIdMaterial(), "Fio de nylon grosso", "Branco", new BigDecimal("3.00"), "m");
 
         assertEquals(salvo.getIdMaterial(), atualizado.getIdMaterial());
         assertEquals("Fio de nylon grosso", atualizado.getNome());
@@ -235,7 +237,7 @@ class MaterialServiceTest {
 
     @Test
     void deveAtualizarMaterialUsandoEntidade() {
-        Material salvo = materialService.salvar(new Material("Fio de seda", new BigDecimal("4.00"), "m"));
+        Material salvo = materialService.salvar(new Material("Fio de seda", "Branco", new BigDecimal("4.00"), "m"));
         salvo.setNome("Fio de seda pura");
         salvo.setPrecoUnidade(new BigDecimal("4.50"));
         salvo.setUnidadeMedida("m");
@@ -249,14 +251,14 @@ class MaterialServiceTest {
     @Test
     void deveLancarExcecaoAoAtualizarMaterialInexistente() {
         assertThrows(NoSuchElementException.class, () ->
-                materialService.atualizar(999999L, "Inexistente", new BigDecimal("1.00"), "un")
+                materialService.atualizar(999999L, "Inexistente", "Natural", new BigDecimal("1.00"), "un")
         );
     }
 
     @Test
     void deveLancarExcecaoAoAtualizarComIdNulo() {
         assertThrows(IllegalArgumentException.class, () ->
-                materialService.atualizar(null, "Nome", new BigDecimal("1.00"), "un")
+                materialService.atualizar(null, "Nome", "Natural", new BigDecimal("1.00"), "un")
         );
     }
 
@@ -277,11 +279,11 @@ class MaterialServiceTest {
 
     @Test
     void deveLancarExcecaoAoSalvarMaterialComNomeNuloOuEmBranco() {
-        Material m1 = new Material(null, new BigDecimal("1.00"), "un");
+        Material m1 = new Material(null, "Natural", new BigDecimal("1.00"), "un");
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m1));
         assertEquals("Nome do material é obrigatório.", ex1.getMessage());
 
-        Material m2 = new Material("   ", new BigDecimal("1.00"), "un");
+        Material m2 = new Material("   ", "Natural", new BigDecimal("1.00"), "un");
         IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m2));
         assertEquals("Nome do material é obrigatório.", ex2.getMessage());
     }
@@ -289,28 +291,28 @@ class MaterialServiceTest {
     @Test
     void deveLancarExcecaoAoSalvarMaterialComNomeExcedendo255Caracteres() {
         String nomeLongo = "A".repeat(256);
-        Material m = new Material(nomeLongo, new BigDecimal("1.00"), "un");
+        Material m = new Material(nomeLongo, "Natural", new BigDecimal("1.00"), "un");
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m));
         assertEquals("Nome do material não pode ultrapassar 255 caracteres.", ex.getMessage());
     }
 
     @Test
     void deveLancarExcecaoAoSalvarMaterialComPrecoNulo() {
-        Material m = new Material("Contas", null, "un");
+        Material m = new Material("Contas", "Natural", null, "un");
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m));
         assertEquals("Preço do material inválido.", ex.getMessage());
     }
 
     @Test
     void deveLancarExcecaoAoSalvarMaterialComPrecoNegativo() {
-        Material m = new Material("Contas", new BigDecimal("-0.01"), "un");
+        Material m = new Material("Contas", "Natural", new BigDecimal("-0.01"), "un");
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m));
         assertEquals("Preço do material inválido.", ex.getMessage());
     }
 
     @Test
     void devePermitirSalvarMaterialComPrecoZero() {
-        Material m = new Material("Material doado", BigDecimal.ZERO, "un");
+        Material m = new Material("Material doado", "Natural", BigDecimal.ZERO, "un");
         Material salvo = materialService.salvar(m);
         assertNotNull(salvo.getIdMaterial());
         assertEquals(0, BigDecimal.ZERO.compareTo(salvo.getPrecoUnidade()));
@@ -318,25 +320,25 @@ class MaterialServiceTest {
 
     @Test
     void deveLancarExcecaoAoSalvarMaterialComUnidadeMedidaNulaOuEmBranco() {
-        Material m1 = new Material("Contas", new BigDecimal("1.00"), null);
+        Material m1 = new Material("Contas", "Natural", new BigDecimal("1.00"), null);
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m1));
         assertEquals("Unidade de medida é obrigatória.", ex1.getMessage());
 
-        Material m2 = new Material("Contas", new BigDecimal("1.00"), "  ");
+        Material m2 = new Material("Contas", "Natural", new BigDecimal("1.00"), "  ");
         IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m2));
         assertEquals("Unidade de medida é obrigatória.", ex2.getMessage());
     }
 
     @Test
     void deveLancarExcecaoAoSalvarMaterialComUnidadeMedidaExcedendo10Caracteres() {
-        Material m = new Material("Contas", new BigDecimal("1.00"), "centimetros");
+        Material m = new Material("Contas", "Natural", new BigDecimal("1.00"), "centimetros");
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> materialService.salvar(m));
         assertEquals("Unidade de medida não pode ultrapassar 10 caracteres.", ex.getMessage());
     }
 
     @Test
     void deveExcluirMaterialSemVinculoComProduto() {
-        Material salvo = materialService.salvar(new Material("Madeira", new BigDecimal("0.50"), "un"));
+        Material salvo = materialService.salvar(new Material("Madeira", "Marrom", new BigDecimal("0.50"), "un"));
         Long id = salvo.getIdMaterial();
 
         materialService.excluir(id);
@@ -356,7 +358,7 @@ class MaterialServiceTest {
 
     @Test
     void deveLancarExcecaoAoExcluirMaterialVinculadoAProduto() {
-        Material material = materialService.salvar(new Material("Fio encerado", new BigDecimal("1.20"), "m"));
+        Material material = materialService.salvar(new Material("Fio encerado", "Marrom", new BigDecimal("1.20"), "m"));
 
         produtoService.cadastrarComMateriais(
                 "PROD-TEST-001",
@@ -380,8 +382,8 @@ class MaterialServiceTest {
 
     @Test
     void deveGarantirIdentificadoresAutoincrementDistintos() {
-        Material m1 = materialService.salvar(new Material("Mat 1", new BigDecimal("1.00"), "un"));
-        Material m2 = materialService.salvar(new Material("Mat 2", new BigDecimal("2.00"), "un"));
+        Material m1 = materialService.salvar(new Material("Mat 1", "Azul", new BigDecimal("1.00"), "un"));
+        Material m2 = materialService.salvar(new Material("Mat 2", "Verde", new BigDecimal("2.00"), "un"));
 
         assertNotNull(m1.getIdMaterial());
         assertNotNull(m2.getIdMaterial());
@@ -391,7 +393,7 @@ class MaterialServiceTest {
 
     @Test
     void deveRegistrarMovimentacaoDeEntradaEAtualizarSaldoDoMaterial() {
-        Material material = materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un", new BigDecimal("10.00"));
+        Material material = materialService.salvar("Contas de madeira", "Marrom", new BigDecimal("0.50"), "un", new BigDecimal("10.00"));
 
         MovimentacaoMaterial mov = materialService.registrarMovimentacao(
                 material.getIdMaterial(),
@@ -416,7 +418,7 @@ class MaterialServiceTest {
 
     @Test
     void deveRegistrarMovimentacaoDeSaidaEAtualizarSaldoDoMaterial() {
-        Material material = materialService.salvar("Fio encerado", new BigDecimal("1.20"), "m", new BigDecimal("50.00"));
+        Material material = materialService.salvar("Fio encerado", "Marrom", new BigDecimal("1.20"), "m", new BigDecimal("50.00"));
 
         MovimentacaoMaterial mov = materialService.registrarMovimentacao(
                 material.getIdMaterial(),
@@ -437,7 +439,7 @@ class MaterialServiceTest {
 
     @Test
     void deveRejeitarSaidaComSaldoInsuficientePreservandoSaldoEHistorico() {
-        Material material = materialService.salvar("Medalha", new BigDecimal("3.00"), "un", new BigDecimal("5.00"));
+        Material material = materialService.salvar("Medalha", "Prata", new BigDecimal("3.00"), "un", new BigDecimal("5.00"));
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
                 materialService.registrarMovimentacao(
@@ -458,7 +460,7 @@ class MaterialServiceTest {
 
     @Test
     void deveRegistrarPerdaDeMaterialEAtualizarSaldoConsistente() {
-        Material material = materialService.salvar("Contas de cristal", new BigDecimal("1.00"), "un", new BigDecimal("40.00"));
+        Material material = materialService.salvar("Contas de cristal", "Transparente", new BigDecimal("1.00"), "un", new BigDecimal("40.00"));
 
         MovimentacaoMaterial perda = materialService.registrarPerda(
                 material.getIdMaterial(),
@@ -482,7 +484,7 @@ class MaterialServiceTest {
 
     @Test
     void deveRejeitarPerdaComSaldoInsuficienteOuSemMotivo() {
-        Material material = materialService.salvar("Fita de cetim", new BigDecimal("2.00"), "m", new BigDecimal("10.00"));
+        Material material = materialService.salvar("Fita de cetim", "Rosa", new BigDecimal("2.00"), "m", new BigDecimal("10.00"));
 
         IllegalArgumentException exSemMotivo = assertThrows(IllegalArgumentException.class, () ->
                 materialService.registrarPerda(material.getIdMaterial(), new BigDecimal("2.00"), "   ", null)
@@ -501,7 +503,7 @@ class MaterialServiceTest {
 
     @Test
     void deveManterConsistenciaEntreMultiplasMovimentacoesEPerdasSemDuplicidade() {
-        Material material = materialService.salvar("Crucifixo", new BigDecimal("4.00"), "un", BigDecimal.ZERO);
+        Material material = materialService.salvar("Crucifixo", "Dourado", new BigDecimal("4.00"), "un", BigDecimal.ZERO);
 
         materialService.registrarMovimentacao(material.getIdMaterial(), TipoMovimentacaoMaterial.ENTRADA, new BigDecimal("50.00"), "Estoque inicial", null);
         materialService.registrarMovimentacao(material.getIdMaterial(), TipoMovimentacaoMaterial.SAIDA, new BigDecimal("12.00"), "Produção", null);
@@ -523,15 +525,15 @@ class MaterialServiceTest {
 
     @Test
     void naoDeveSalvarMaterialComNomeDuplicadoIgnorandoCaseEEspacos() {
-        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
+        materialService.salvar("Contas de madeira", "Marrom", new BigDecimal("0.50"), "un");
 
         IllegalArgumentException ex1 = assertThrows(IllegalArgumentException.class, () ->
-                materialService.salvar("Contas de madeira", new BigDecimal("0.80"), "cx")
+                materialService.salvar("Contas de madeira", "Escuro", new BigDecimal("0.80"), "cx")
         );
         assertTrue(ex1.getMessage().contains("Já existe um material cadastrado com o nome informado"));
 
         IllegalArgumentException ex2 = assertThrows(IllegalArgumentException.class, () ->
-                materialService.salvar("   CONTAS DE MADEIRA   ", new BigDecimal("1.00"), "un")
+                materialService.salvar("   CONTAS DE MADEIRA   ", "Claro", new BigDecimal("1.00"), "un")
         );
         assertTrue(ex2.getMessage().contains("Já existe um material cadastrado com o nome informado"));
 
@@ -540,15 +542,15 @@ class MaterialServiceTest {
 
     @Test
     void naoDeveAtualizarMaterialComNomeDuplicadoDeOutroMaterial() {
-        materialService.salvar("Contas de madeira", new BigDecimal("0.50"), "un");
-        Material m2 = materialService.salvar("Fio encerado", new BigDecimal("1.20"), "m");
+        materialService.salvar("Contas de madeira", "Marrom", new BigDecimal("0.50"), "un");
+        Material m2 = materialService.salvar("Fio encerado", "Preto", new BigDecimal("1.20"), "m");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
-                materialService.atualizar(m2.getIdMaterial(), "  contas de madeira  ", new BigDecimal("1.50"), "m")
+                materialService.atualizar(m2.getIdMaterial(), "  contas de madeira  ", "Preto", new BigDecimal("1.50"), "m")
         );
         assertTrue(ex.getMessage().contains("Já existe outro material cadastrado com o nome informado"));
 
-        Material atualizadoMesmoNome = materialService.atualizar(m2.getIdMaterial(), "Fio encerado", new BigDecimal("2.00"), "m");
+        Material atualizadoMesmoNome = materialService.atualizar(m2.getIdMaterial(), "Fio encerado", "Preto", new BigDecimal("2.00"), "m");
         assertEquals(0, new BigDecimal("2.00").compareTo(atualizadoMesmoNome.getPrecoUnidade()));
     }
 }
