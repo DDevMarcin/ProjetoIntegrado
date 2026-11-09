@@ -45,8 +45,29 @@ public class DatabaseSchemaInitializer {
 
     @PostConstruct
     public void inicializarSchema() {
+        garantirColunaCorMaterial();
         garantirColunaEstoqueMaterial();
         garantirUnicidadeNomesExistentes();
+    }
+
+    private void garantirColunaCorMaterial() {
+        try (Connection connection = dataSource.getConnection()) {
+            DatabaseMetaData metaData = connection.getMetaData();
+            boolean possuiColunaCor;
+            try (ResultSet rs = metaData.getColumns(null, null, "material", "cor")) {
+                possuiColunaCor = rs.next();
+            }
+
+            if (!possuiColunaCor) {
+                String comandoAlter = String.join(" ",
+                        "ALTER TABLE", "material",
+                        "ADD COLUMN", "cor VARCHAR(50) NOT NULL DEFAULT ''");
+                try (Statement stmt = connection.createStatement()) {
+                    stmt.execute(comandoAlter);
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     private void garantirColunaEstoqueMaterial() {
