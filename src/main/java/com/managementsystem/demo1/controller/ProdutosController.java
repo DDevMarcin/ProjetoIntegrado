@@ -122,7 +122,7 @@ public class ProdutosController {
     // ── Dados ──────────────────────────────────────────────────────────────
 
     private void carregarProdutos() {
-        todosProdutos = produtoService.listarTodos();
+        todosProdutos = produtoService.listarEstoque();  // só PRE_PRONTO
         filtrar(campoBusca.getText());
     }
 
@@ -238,26 +238,13 @@ public class ProdutosController {
     // ── Handlers botões criar ──────────────────────────────────────────────
 
     @FXML
-    public void abrirFormPrePronto() {
+    public void abrirFormCadastro() {
         javafx.scene.Scene scene = tabelaProdutos.getScene();
         if (scene == null) return;
-
         javafx.scene.Node sp = scene.lookup("#contentArea");
         if (sp instanceof javafx.scene.layout.StackPane stackPane
                 && stackPane.getUserData() instanceof MainLayoutController main) {
-            main.navCadastrarPrePronto();
-        }
-    }
-
-    @FXML
-    public void abrirFormPersonalizado() {
-        javafx.scene.Scene scene = tabelaProdutos.getScene();
-        if (scene == null) return;
-
-        javafx.scene.Node sp = scene.lookup("#contentArea");
-        if (sp instanceof javafx.scene.layout.StackPane stackPane
-                && stackPane.getUserData() instanceof MainLayoutController main) {
-            main.navCadastrarPersonalizado();
+            main.navCadastrarProduto();
         }
     }
 

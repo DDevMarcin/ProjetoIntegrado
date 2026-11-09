@@ -100,12 +100,12 @@
                                              text="Calcular pelos materiais"
                                              styleClass="form-radio"/>
                                 <RadioButton fx:id="rbPrecoManual"
-                                             text="Valor manual"
+                                             text="Valor total"
                                              styleClass="form-radio"/>
                             </HBox>
 
                             <VBox spacing="6">
-                                <Label styleClass="form-label" text="Valor manual (R$)"/>
+                                <Label styleClass="form-label" text="Valor total (R$)"/>
                                 <TextField fx:id="campoValorManual"
                                            promptText="Ex.: 45,00"
                                            styleClass="form-field"

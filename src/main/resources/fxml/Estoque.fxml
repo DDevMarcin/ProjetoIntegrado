@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.EstoqueController"
+            style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="32" right="32" bottom="24" left="32"/>
+    </padding>
+
+    <!-- ══════════════════════════════════════════════════════
+         TOP: título + subtítulo + cards de alerta + botões
+         ══════════════════════════════════════════════════════ -->
+    <top>
+        <VBox spacing="14" style="-fx-padding: 0 0 20 0;">
+
+            <!-- Título + subtítulo -->
+            <Label text="Estoque"
+                   style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+            <Label text="Controle de insumos, entradas, saídas e perdas de produção"
+                   style="-fx-font-size: 15px; -fx-text-fill: #888;"/>
+
+            <!-- Cards de alerta + botões de ação rápida -->
+            <HBox spacing="12" alignment="CENTER_LEFT">
+
+                <!-- Card: Materiais fora de estoque -->
+                <HBox fx:id="cardForaEstoque" spacing="10" alignment="CENTER_LEFT"
+                      style="-fx-background-color: white; -fx-background-radius: 10;
+                             -fx-border-color: #f0d0da; -fx-border-radius: 10; -fx-border-width: 1;
+                             -fx-padding: 10 16 10 16; -fx-cursor: hand;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 6, 0, 0, 2);">
+                    <Label text="⚠" style="-fx-font-size: 20px; -fx-text-fill: #D31946;"/>
+                    <VBox spacing="2">
+                        <Label text="Materiais fora de estoque"
+                               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                        <Label fx:id="labelForaEstoque" text="0"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                    </VBox>
+                    <Label text="▼" style="-fx-font-size: 12px; -fx-text-fill: #D31946;"/>
+                </HBox>
+
+                <!-- Card: Materiais com estoque baixo -->
+                <HBox fx:id="cardEstoqueBaixo" spacing="10" alignment="CENTER_LEFT"
+                      style="-fx-background-color: white; -fx-background-radius: 10;
+                             -fx-border-color: #f0d0da; -fx-border-radius: 10; -fx-border-width: 1;
+                             -fx-padding: 10 16 10 16; -fx-cursor: hand;
+                             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.06), 6, 0, 0, 2);">
+                    <Label text="⚠" style="-fx-font-size: 20px; -fx-text-fill: #e6a800;"/>
+                    <VBox spacing="2">
+                        <Label text="Materiais com estoque baixo"
+                               style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                        <Label fx:id="labelEstoqueBaixo" text="0"
+                               style="-fx-font-size: 22px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                    </VBox>
+                    <Label text="▼" style="-fx-font-size: 12px; -fx-text-fill: #D31946;"/>
+                </HBox>
+
+                <Region HBox.hgrow="ALWAYS"/>
+
+                <!-- Botões de ação rápida -->
+                <VBox spacing="8" alignment="CENTER_RIGHT">
+                    <Button text="↻  Registrar Movimentação"
+                            onAction="#abrirRegistrarMovimentacao"
+                            style="-fx-background-color: white; -fx-background-radius: 20;
+                                   -fx-border-color: #ccc; -fx-border-radius: 20; -fx-border-width: 1.5;
+                                   -fx-text-fill: #555; -fx-font-size: 17px; -fx-font-weight: bold;
+                                   -fx-padding: 8 18 8 18; -fx-cursor: hand;"/>
+                    <Button text="↘  Registrar Perda"
+                            onAction="#abrirRegistrarPerdaRapida"
+                            style="-fx-background-color: white; -fx-background-radius: 20;
+                                   -fx-border-color: #D31946; -fx-border-radius: 20; -fx-border-width: 1.5;
+                                   -fx-text-fill: #D31946; -fx-font-size: 17px; -fx-font-weight: bold;
+                                   -fx-padding: 8 18 8 18; -fx-cursor: hand;"/>
+                </VBox>
+
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ══════════════════════════════════════════════════════
+         CENTER: duas tabelas (esquerda) + painel detalhes (direita)
+         ══════════════════════════════════════════════════════ -->
+    <center>
+        <HBox spacing="16">
+
+            <!-- ── Coluna esquerda: tabelas empilhadas ── -->
+            <ScrollPane fitToWidth="true" HBox.hgrow="ALWAYS"
+                        style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
+                <content>
+                    <VBox spacing="20">
+
+                        <!-- ════════════════════════════════
+                             TABELA DE MATERIAIS
+                             ════════════════════════════════ -->
+
+                        <!-- Barra busca + botão -->
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <TextField fx:id="campoBuscaMaterial"
+                                       promptText="Buscar materiais"
+                                       prefWidth="300"
+                                       styleClass="busca-field"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="+ Cadastrar Material"
+                                    onAction="#abrirCadastrarMaterial"
+                                    styleClass="btn-criar"/>
+                        </HBox>
+
+                        <!-- Card tabela materiais -->
+                        <VBox spacing="0" styleClass="card-tabela">
+
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 20 12 20;">
+                                <Label fx:id="labelTituloMateriais"
+                                       text="Controle de Materiais"
+                                       styleClass="card-titulo"
+                                       style="-fx-padding: 0;"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="labelSubtituloMateriais"
+                                       text=""
+                                       style="-fx-font-size: 14px; -fx-text-fill: #aaa;"/>
+                            </HBox>
+
+                            <TableView fx:id="tabelaMateriais"
+                                       VBox.vgrow="ALWAYS"
+                                       prefHeight="260"
+                                       styleClass="tabela-produtos">
+                                <columns>
+                                    <TableColumn fx:id="colMatNome"       text="Nome"            prefWidth="220"/>
+                                    <TableColumn fx:id="colMatCodigo"     text="Código"          prefWidth="70"/>
+                                    <TableColumn fx:id="colMatQuantidade" text="Quantidade"      prefWidth="100"/>
+                                    <TableColumn fx:id="colMatCor"        text="Cor"             prefWidth="90"/>
+                                    <TableColumn fx:id="colMatValor"      text="Valor unitário"  prefWidth="110"/>
+                                </columns>
+                                <placeholder>
+                                    <Label text="Nenhum material encontrado." style="-fx-text-fill: #aaa;"/>
+                                </placeholder>
+                            </TableView>
+
+                            <!-- Rodapé materiais -->
+                            <HBox alignment="CENTER_LEFT" styleClass="rodape-tabela">
+                                <Label fx:id="labelTotalMateriais" text="Total de Materiais: 0" styleClass="rodape-label-total"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <HBox spacing="6" alignment="CENTER">
+                                    <Button fx:id="btnAnteriorMat" text="&#8249;" onAction="#paginaAnteriorMat" styleClass="btn-pagina"/>
+                                    <Label  fx:id="labelPaginaMat" text="Página 1"                               styleClass="rodape-label-pagina"/>
+                                    <Button fx:id="btnProximoMat"  text="&#8250;" onAction="#proximaPaginaMat"  styleClass="btn-pagina"/>
+                                </HBox>
+                            </HBox>
+
+                        </VBox>
+
+                        <!-- ════════════════════════════════
+                             TABELA DE PRODUTOS
+                             ════════════════════════════════ -->
+
+                        <!-- Barra busca produtos -->
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <TextField fx:id="campoBuscaProduto"
+                                       promptText="Buscar produtos"
+                                       prefWidth="300"
+                                       styleClass="busca-field"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                        </HBox>
+
+                        <!-- Card tabela produtos -->
+                        <VBox spacing="0" styleClass="card-tabela">
+
+                            <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 20 12 20;">
+                                <Label fx:id="labelTituloProdutos"
+                                       text="Controle de Produtos"
+                                       styleClass="card-titulo"
+                                       style="-fx-padding: 0;"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <Label fx:id="labelSubtituloProdutos"
+                                       text=""
+                                       style="-fx-font-size: 14px; -fx-text-fill: #aaa;"/>
+                            </HBox>
+
+                            <TableView fx:id="tabelaProdutos"
+                                       VBox.vgrow="ALWAYS"
+                                       prefHeight="260"
+                                       styleClass="tabela-produtos">
+                                <columns>
+                                    <TableColumn fx:id="colProdNome"       text="Nome"           prefWidth="220"/>
+                                    <TableColumn fx:id="colProdCodigo"     text="Código"         prefWidth="70"/>
+                                    <TableColumn fx:id="colProdQuantidade" text="Quantidade"     prefWidth="100"/>
+                                    <TableColumn fx:id="colProdValor"      text="Valor unitário" prefWidth="110"/>
+                                </columns>
+                                <placeholder>
+                                    <Label text="Nenhum produto encontrado." style="-fx-text-fill: #aaa;"/>
+                                </placeholder>
+                            </TableView>
+
+                            <!-- Rodapé produtos -->
+                            <HBox alignment="CENTER_LEFT" styleClass="rodape-tabela">
+                                <Label fx:id="labelTotalProdutos" text="Total de Produtos: 0" styleClass="rodape-label-total"/>
+                                <Region HBox.hgrow="ALWAYS"/>
+                                <HBox spacing="6" alignment="CENTER">
+                                    <Button fx:id="btnAnteriorProd" text="&#8249;" onAction="#paginaAnteriorProd" styleClass="btn-pagina"/>
+                                    <Label  fx:id="labelPaginaProd" text="Página 1"                               styleClass="rodape-label-pagina"/>
+                                    <Button fx:id="btnProximoProd"  text="&#8250;" onAction="#proximaPaginaProd"  styleClass="btn-pagina"/>
+                                </HBox>
+                            </HBox>
+
+                        </VBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+            <!-- ── Coluna direita: painel de detalhes ── -->
+            <ScrollPane fx:id="painelDetalhes"
+                        fitToWidth="true"
+                        prefWidth="340"
+                        minWidth="340"
+                        maxWidth="340"
+                        visible="false"
+                        managed="false"
+                        styleClass="painel-detalhes-scroll">
+                <content>
+                    <VBox fx:id="conteudoDetalhes" spacing="12" style="-fx-padding: 20;">
+
+                        <!-- ── Cabeçalho: nome + badge código ── -->
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label fx:id="detNome"
+                                   text="—"
+                                   styleClass="detalhe-nome"
+                                   HBox.hgrow="ALWAYS"
+                                   wrapText="true"/>
+                            <Label fx:id="detCodigo"
+                                   text=""
+                                   styleClass="detalhe-codigo-badge"/>
+                        </HBox>
+
+                        <!-- Valor em destaque -->
+                        <Label fx:id="detValor" text="R$ —" styleClass="detalhe-valor"/>
+
+                        <!-- Estoque / Unidade -->
+                        <HBox alignment="CENTER_LEFT" spacing="6">
+                            <Label fx:id="detEstoqueLabel" text="Estoque:" styleClass="detalhe-info-label"/>
+                            <Label fx:id="detEstoque"      text="—"        styleClass="detalhe-info-valor"/>
+                        </HBox>
+
+                        <!-- Unidade (apenas material) -->
+                        <HBox fx:id="secaoUnidade" alignment="CENTER_LEFT" spacing="6">
+                            <Label text="Unidade:" styleClass="detalhe-info-label"/>
+                            <Label fx:id="detUnidade" text="—" styleClass="detalhe-info-valor"/>
+                        </HBox>
+
+                        <!-- Cor (apenas material) -->
+                        <HBox fx:id="secaoCor" alignment="CENTER_LEFT" spacing="6">
+                            <Label text="Cor:" styleClass="detalhe-info-label"/>
+                            <Label fx:id="detCor" text="—" styleClass="detalhe-info-valor"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <!-- Stats -->
+                        <HBox spacing="8">
+                            <VBox styleClass="detalhe-stat-card" HBox.hgrow="ALWAYS">
+                                <Label fx:id="detStatTitulo1" text="Total usado" styleClass="detalhe-stat-titulo"/>
+                                <Label fx:id="detStatValor1"  text="—"           styleClass="detalhe-stat-valor"/>
+                            </VBox>
+                            <VBox styleClass="detalhe-stat-card" HBox.hgrow="ALWAYS">
+                                <Label fx:id="detStatTitulo2" text="Valor total" styleClass="detalhe-stat-titulo"/>
+                                <Label fx:id="detStatValor2"  text="—"           styleClass="detalhe-stat-valor"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Descrição / Observações -->
+                        <VBox styleClass="detalhe-secao" spacing="6">
+                            <Label fx:id="detDescricaoTitulo" text="Descrição" styleClass="detalhe-secao-titulo"/>
+                            <Label fx:id="detDescricao"
+                                   text="—"
+                                   wrapText="true"
+                                   styleClass="detalhe-secao-texto"/>
+                        </VBox>
+
+                        <!-- Materiais usados no produto (apenas produto) -->
+                        <VBox fx:id="secaoMateriaisProduto" spacing="8">
+                            <Label text="Materiais utilizados" styleClass="detalhe-secao-titulo"/>
+                            <FlowPane fx:id="painelMateriaisProduto" hgap="8" vgap="8"/>
+                        </VBox>
+
+                        <!-- Prazo (apenas produto personalizado) -->
+                        <VBox fx:id="secaoPrazo" visible="false" managed="false" spacing="4">
+                            <Label text="Prazo de produção" styleClass="detalhe-secao-titulo"/>
+                            <Label fx:id="detPrazo" text="—" styleClass="detalhe-info-valor"/>
+                        </VBox>
+
+                        <!-- Tipo (apenas produto) -->
+                        <HBox fx:id="secaoTipo" alignment="CENTER_LEFT" spacing="6"
+                              visible="false" managed="false">
+                            <Label text="Tipo:" styleClass="detalhe-info-label"/>
+                            <Label fx:id="detTipo" text="—" styleClass="detalhe-info-valor"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <!-- Botões de ação -->
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <Button fx:id="btnDeletar"
+                                    text="Deletar"
+                                    onAction="#deletarSelecionado"
+                                    styleClass="btn-deletar"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="btnEditar"
+                                    text="Editar Dados"
+                                    onAction="#editarSelecionado"
+                                    styleClass="btn-editar"/>
+                        </HBox>
+
+                        <!-- Botões de movimentação (apenas material) -->
+                        <VBox fx:id="secaoMovimentacao" spacing="8"
+                              style="-fx-background-color: white; -fx-background-radius: 8;
+                                     -fx-border-color: #f0d0da; -fx-border-radius: 8;
+                                     -fx-border-width: 1; -fx-padding: 12;">
+                            <Label text="Movimentações de Estoque" styleClass="detalhe-secao-titulo"/>
+                            <HBox spacing="10">
+                                <Button text="Registrar Entrada"
+                                        onAction="#registrarEntrada"
+                                        style="-fx-background-color: #e8f5e9; -fx-background-radius: 8;
+                                               -fx-border-color: #a5d6a7; -fx-border-radius: 8;
+                                               -fx-border-width: 1; -fx-text-fill: #2e7d32;
+                                               -fx-font-size: 13px; -fx-font-weight: bold;
+                                               -fx-padding: 6 12 6 12; -fx-cursor: hand;"/>
+                                <Button text="Registrar Perda"
+                                        onAction="#registrarPerda"
+                                        style="-fx-background-color: #fff3e0; -fx-background-radius: 8;
+                                               -fx-border-color: #ffcc80; -fx-border-radius: 8;
+                                               -fx-border-width: 1; -fx-text-fill: #e65100;
+                                               -fx-font-size: 13px; -fx-font-weight: bold;
+                                               -fx-padding: 6 12 6 12; -fx-cursor: hand;"/>
+                            </HBox>
+                        </VBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+        </HBox>
+    </center>
+
+</BorderPane>

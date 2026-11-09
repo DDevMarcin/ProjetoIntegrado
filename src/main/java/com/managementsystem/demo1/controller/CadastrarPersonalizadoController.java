@@ -233,7 +233,7 @@ public class CadastrarPersonalizadoController {
                 return;
             }
         } else if (materiaisSelecionados.isEmpty()) {
-            setStatus("Adicione ao menos um material ou escolha 'Valor manual'.", true);
+            setStatus("Adicione ao menos um material ou escolha 'Valor total'.", true);
             return;
         }
 

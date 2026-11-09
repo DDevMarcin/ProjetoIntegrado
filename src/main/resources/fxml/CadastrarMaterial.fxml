@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.CadastrarMaterialController"
+            style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="32" right="32" bottom="24" left="32"/>
+    </padding>
+
+    <!-- ── TOP: título + subtítulo + botão voltar ── -->
+    <top>
+        <VBox spacing="4" style="-fx-padding: 0 0 20 0;">
+            <HBox alignment="CENTER_LEFT" spacing="12">
+                <Button text="&#8592; Voltar"
+                        onAction="#voltar"
+                        styleClass="btn-voltar"/>
+                <VBox spacing="2">
+                    <Label text="Cadastrar Materiais"
+                           style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+                    <Label text="Preencha as informações do material abaixo"
+                           style="-fx-font-size: 15px; -fx-text-fill: #999;"/>
+                </VBox>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ── CENTER: formulário (esq) + preview (dir) ── -->
+    <center>
+        <HBox spacing="24">
+
+            <!-- ════ PAINEL ESQUERDO: formulário ════ -->
+            <ScrollPane fitToWidth="true"
+                        HBox.hgrow="ALWAYS"
+                        styleClass="form-scroll">
+                <content>
+                    <VBox spacing="16" style="-fx-padding: 28; -fx-background-color: white;
+                                              -fx-background-radius: 12; -fx-border-color: #f0d0da;
+                                              -fx-border-radius: 12; -fx-border-width: 1;">
+
+                        <!-- Nome do Material -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Nome do Material *"/>
+                            <TextField fx:id="campoNome"
+                                       promptText="Ex.: Miçanga preta verniz"
+                                       styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Tipo / Cor -->
+                        <HBox spacing="16">
+                            <VBox spacing="6" HBox.hgrow="ALWAYS">
+                                <Label styleClass="form-label-required" text="Tipo de Material *"/>
+                                <TextField fx:id="campoTipo"
+                                           promptText="Ex.: Miçanga, Fio, Medalha"
+                                           styleClass="form-field"/>
+                            </VBox>
+                            <VBox spacing="6" prefWidth="150">
+                                <Label styleClass="form-label" text="Cor"/>
+                                <TextField fx:id="campoCor"
+                                           promptText="Ex.: Preta"
+                                           styleClass="form-field"/>
+                            </VBox>
+                        </HBox>
+
+                        <!-- Quantidade em estoque -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Quantidade em Estoque"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <TextField fx:id="campoQuantidade"
+                                           promptText="Ex.: 100"
+                                           prefWidth="140"
+                                           styleClass="form-field"/>
+                                <TextField fx:id="campoUnidade"
+                                           promptText="Unidade (ex.: un, m, g, kg)"
+                                           HBox.hgrow="ALWAYS"
+                                           styleClass="form-field"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Detalhe do Material -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Detalhe do Material"/>
+                            <TextArea fx:id="campoDetalhe"
+                                      promptText="Terços dos homens feito artesanalmente, contém 50 miçangas, 1 crucifixo e um medalhão central, muito resistente na cor preta com mescla branca"
+                                      prefRowCount="4"
+                                      wrapText="true"
+                                      styleClass="form-field"/>
+                        </VBox>
+
+                        <!-- Preço da unidade -->
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Preço da unidade *"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <TextField fx:id="campoPreco"
+                                           promptText="0,00"
+                                           prefWidth="140"
+                                           styleClass="form-field"/>
+                                <Label text="R$"
+                                       style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                            </HBox>
+                        </VBox>
+
+                        <!-- Status / feedback -->
+                        <Label fx:id="labelStatus" wrapText="true"
+                               style="-fx-font-size: 15px;"/>
+
+                        <!-- Botões finais -->
+                        <HBox spacing="12" alignment="CENTER_RIGHT"
+                              style="-fx-padding: 8 0 0 0;">
+                            <Button text="Limpar"
+                                    onAction="#limpar"
+                                    styleClass="btn-voltar"/>
+                            <Button text="&#10003;  Adicionar"
+                                    onAction="#salvar"
+                                    styleClass="btn-salvar"/>
+                        </HBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+            <!-- ════ PAINEL DIREITO: preview ════ -->
+            <VBox spacing="16"
+                  prefWidth="320" minWidth="300" maxWidth="340"
+                  style="-fx-background-color: #FFF0F5; -fx-background-radius: 12;
+                         -fx-border-color: #f0d0da; -fx-border-radius: 12;
+                         -fx-border-width: 1; -fx-padding: 20;">
+
+                <!-- Nome + tipo badge -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label fx:id="previewNome"
+                           text="Nome do material"
+                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #D31946;"
+                           wrapText="true"
+                           HBox.hgrow="ALWAYS"/>
+                    <Label fx:id="previewTipoBadge"
+                           text="—"
+                           styleClass="detalhe-codigo-badge"/>
+                </HBox>
+
+                <Separator/>
+
+                <!-- Preço em destaque -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Preço unit.:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewPreco" text="R$ —" styleClass="detalhe-valor"/>
+                </HBox>
+
+                <!-- Estoque -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Estoque:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewEstoque" text="—" styleClass="detalhe-info-valor"/>
+                </HBox>
+
+                <!-- Cor -->
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Cor:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewCor" text="—" styleClass="detalhe-info-valor"/>
+                </HBox>
+
+                <Separator/>
+
+                <!-- Descrição -->
+                <VBox spacing="4">
+                    <Label text="Descricao" styleClass="detalhe-secao-titulo"/>
+                    <Label fx:id="previewDetalhe"
+                           text="Sem descricao."
+                           wrapText="true"
+                           styleClass="detalhe-secao-texto"/>
+                </VBox>
+
+                <Region VBox.vgrow="ALWAYS"/>
+
+            </VBox>
+
+        </HBox>
+    </center>
+
+</BorderPane>
