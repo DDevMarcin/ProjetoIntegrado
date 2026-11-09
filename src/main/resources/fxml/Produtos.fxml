@@ -26,11 +26,8 @@
                            prefWidth="300"
                            styleClass="busca-field"/>
                 <Region HBox.hgrow="ALWAYS"/>
-                <Button text="+ Pré-pronto"
-                        onAction="#abrirFormPrePronto"
-                        styleClass="btn-criar"/>
-                <Button text="+ Personalizado"
-                        onAction="#abrirFormPersonalizado"
+                <Button text="+ Produto"
+                        onAction="#abrirFormCadastro"
                         styleClass="btn-criar"/>
             </HBox>
 

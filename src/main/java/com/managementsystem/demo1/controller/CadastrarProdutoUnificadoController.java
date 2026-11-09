@@ -1,0 +1,295 @@
+package com.managementsystem.demo1.controller;
+
+import com.managementsystem.demo1.model.Material;
+import com.managementsystem.demo1.model.Produto;
+import com.managementsystem.demo1.model.TipoProduto;
+import com.managementsystem.demo1.service.ItemMaterialInput;
+import com.managementsystem.demo1.service.MaterialService;
+import com.managementsystem.demo1.service.ProdutoService;
+import javafx.collections.FXCollections;
+import javafx.fxml.FXML;
+import javafx.scene.control.*;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+@Component
+@Scope("prototype")
+public class CadastrarProdutoUnificadoController {
+
+    // ── Campos ─────────────────────────────────────────────────────────────
+    @FXML private TextField  campoCodigo;
+    @FXML private TextField  campoNome;
+    @FXML private TextArea   campoDescricao;
+    @FXML private VBox       secaoPrePronto;
+    @FXML private TextField  campoQuantidade;
+
+    // ── Preço ──────────────────────────────────────────────────────────────
+    @FXML private RadioButton rbPrecoMateriais;
+    @FXML private RadioButton rbPrecoManual;
+    @FXML private TextField   campoValorManual;
+
+    // ── Materiais ──────────────────────────────────────────────────────────
+    @FXML private VBox               secaoMateriais;
+    @FXML private ComboBox<Material> comboMaterial;
+    @FXML private TextField          campoQtdMaterial;
+    @FXML private FlowPane           listaMateriais;
+
+    // ── Preview ────────────────────────────────────────────────────────────
+    @FXML private Label    previewNome;
+    @FXML private Label    previewCodigo;
+    @FXML private Label    previewValor;
+    @FXML private HBox     previewSecaoQtd;
+    @FXML private Label    previewQuantidade;
+    @FXML private Label    previewDescricao;
+    @FXML private FlowPane previewMateriais;
+
+    // ── Banner de sucesso ──────────────────────────────────────────────────
+    @FXML private HBox  bannerSucesso;
+    @FXML private Label bannerMensagem;
+
+    // ── Feedback de erro ───────────────────────────────────────────────────
+    @FXML private Label labelStatus;
+
+    // ── Estado interno ─────────────────────────────────────────────────────
+    private final List<Material>   materiaisSelecionados = new ArrayList<>();
+    private final List<BigDecimal> quantidades           = new ArrayList<>();
+
+    private final ProdutoService  produtoService;
+    private final MaterialService materialService;
+
+    public CadastrarProdutoUnificadoController(ProdutoService produtoService,
+                                               MaterialService materialService) {
+        this.produtoService  = produtoService;
+        this.materialService = materialService;
+    }
+
+    @FXML
+    public void initialize() {
+        configurarTogglePreco();
+        carregarMateriais();
+        configurarPreviewAoVivo();
+    }
+
+    private void configurarTogglePreco() {
+        ToggleGroup grupoPreco = new ToggleGroup();
+        rbPrecoMateriais.setToggleGroup(grupoPreco);
+        rbPrecoManual.setToggleGroup(grupoPreco);
+        rbPrecoMateriais.setSelected(true);
+        campoValorManual.setDisable(true);
+
+        grupoPreco.selectedToggleProperty().addListener((obs, ant, novo) -> {
+            boolean manual = novo == rbPrecoManual;
+            campoValorManual.setDisable(!manual);
+            secaoMateriais.setDisable(manual);
+            atualizarPreviewValor();
+        });
+    }
+
+    private void carregarMateriais() {
+        comboMaterial.setItems(FXCollections.observableArrayList(materialService.listarTodos()));
+        comboMaterial.setConverter(new StringConverter<>() {
+            @Override public String toString(Material m) {
+                return m == null ? "" : m.getNome() + " (R$ " + m.getPrecoUnidade() + "/" + m.getUnidadeMedida() + ")";
+            }
+            @Override public Material fromString(String s) { return null; }
+        });
+    }
+
+    private void configurarPreviewAoVivo() {
+        campoNome.textProperty().addListener((o, a, v) ->
+                previewNome.setText(v.isBlank() ? "Nome do produto" : v));
+        campoCodigo.textProperty().addListener((o, a, v) ->
+                previewCodigo.setText(v.isBlank() ? "—" : v));
+        campoDescricao.textProperty().addListener((o, a, v) ->
+                previewDescricao.setText(v.isBlank() ? "Sem descricao." : v));
+        campoQuantidade.textProperty().addListener((o, a, v) ->
+                previewQuantidade.setText(v.isBlank() ? "—" : v + " unidades"));
+        campoValorManual.textProperty().addListener((o, a, v) -> atualizarPreviewValor());
+    }
+
+    private void atualizarPreviewValor() {
+        if (rbPrecoManual.isSelected()) {
+            try {
+                BigDecimal v = new BigDecimal(campoValorManual.getText().replace(",", "."));
+                previewValor.setText("R$ " + String.format("%.2f", v));
+            } catch (NumberFormatException e) {
+                previewValor.setText("R$ —");
+            }
+        } else {
+            BigDecimal soma = BigDecimal.ZERO;
+            for (int i = 0; i < materiaisSelecionados.size(); i++)
+                soma = soma.add(materiaisSelecionados.get(i).getPrecoUnidade().multiply(quantidades.get(i)));
+            previewValor.setText(soma.compareTo(BigDecimal.ZERO) == 0
+                    ? "R$ —" : "R$ " + String.format("%.2f", soma));
+        }
+    }
+
+    // ── Materiais ──────────────────────────────────────────────────────────
+
+    @FXML
+    public void adicionarMaterial() {
+        Material material = comboMaterial.getValue();
+        if (material == null) { setStatus("Selecione um material.", true); return; }
+
+        BigDecimal qtd;
+        try {
+            qtd = new BigDecimal(campoQtdMaterial.getText().replace(",", "."));
+            if (qtd.signum() <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            setStatus("Informe uma quantidade válida para o material.", true);
+            return;
+        }
+
+        materiaisSelecionados.add(material);
+        quantidades.add(qtd);
+
+        String txt = material.getNome() + " × " + qtd.stripTrailingZeros().toPlainString();
+        adicionarTag(listaMateriais, txt, material);
+        adicionarTag(previewMateriais, txt, null);
+
+        comboMaterial.setValue(null);
+        campoQtdMaterial.clear();
+        setStatus("", false);
+        atualizarPreviewValor();
+    }
+
+    private void adicionarTag(FlowPane alvo, String texto, Material material) {
+        HBox tag = new HBox(4);
+        tag.getStyleClass().add("material-tag-removivel");
+        Label label = new Label(texto);
+        label.setStyle("-fx-text-fill: #8F031E; -fx-font-size: 15px; -fx-font-weight: bold;");
+        tag.getChildren().add(label);
+        if (material != null) {
+            Button remover = new Button("×");
+            remover.setStyle("-fx-background-color: transparent; -fx-text-fill: #8F031E; " +
+                    "-fx-font-weight: bold; -fx-cursor: hand; -fx-padding: 0 2 0 4;");
+            remover.setOnAction(e -> removerMaterial(material, tag));
+            tag.getChildren().add(remover);
+        }
+        alvo.getChildren().add(tag);
+    }
+
+    private void removerMaterial(Material material, HBox tagNoForm) {
+        int idx = materiaisSelecionados.lastIndexOf(material);
+        if (idx >= 0) { materiaisSelecionados.remove(idx); quantidades.remove(idx); }
+        listaMateriais.getChildren().remove(tagNoForm);
+        previewMateriais.getChildren().clear();
+        for (int i = 0; i < materiaisSelecionados.size(); i++)
+            adicionarTag(previewMateriais,
+                    materiaisSelecionados.get(i).getNome() + " × "
+                            + quantidades.get(i).stripTrailingZeros().toPlainString(), null);
+        atualizarPreviewValor();
+    }
+
+    // ── Salvar ─────────────────────────────────────────────────────────────
+
+    @FXML
+    public void salvar() {
+        if (campoCodigo.getText().isBlank()) { setStatus("Informe o código do produto.", true); return; }
+        if (campoNome.getText().isBlank())   { setStatus("Informe o nome do produto.", true); return; }
+
+        Integer qtdEstoque;
+        try {
+            qtdEstoque = Integer.parseInt(campoQuantidade.getText().trim());
+            if (qtdEstoque < 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            setStatus("Informe uma quantidade em estoque válida.", true);
+            return;
+        }
+
+        boolean manual = rbPrecoManual.isSelected();
+        BigDecimal valorManual = null;
+
+        if (manual) {
+            try {
+                valorManual = new BigDecimal(campoValorManual.getText().replace(",", "."));
+                if (valorManual.signum() <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                setStatus("Informe um valor de venda válido.", true);
+                return;
+            }
+        } else if (materiaisSelecionados.isEmpty()) {
+            setStatus("Adicione ao menos um material ou escolha 'Valor total'.", true);
+            return;
+        }
+
+        List<ItemMaterialInput> itens = new ArrayList<>();
+        for (int i = 0; i < materiaisSelecionados.size(); i++)
+            itens.add(new ItemMaterialInput(materiaisSelecionados.get(i).getIdMaterial(), quantidades.get(i)));
+
+        try {
+            Produto salvo = produtoService.cadastrarComMateriais(
+                    campoCodigo.getText().trim(), campoNome.getText().trim(),
+                    campoDescricao.getText().trim(), TipoProduto.PRE_PRONTO,
+                    qtdEstoque, null, null, manual, valorManual, itens);
+            setStatus("", false);
+            mostrarBannerSucesso("Produto \"" + salvo.getNome() + "\" cadastrado com sucesso!");
+            limpar();
+        } catch (IllegalArgumentException e) {
+            setStatus(e.getMessage(), true);
+        } catch (Exception e) {
+            setStatus("Erro inesperado: " + e.getMessage(), true);
+        }
+    }
+
+    // ── Voltar / Limpar ────────────────────────────────────────────────────
+
+    @FXML
+    public void voltar() {
+        javafx.scene.Scene scene = campoCodigo.getScene();
+        if (scene == null) return;
+        javafx.scene.Node sp = scene.lookup("#contentArea");
+        if (sp instanceof javafx.scene.layout.StackPane stackPane
+                && stackPane.getUserData() instanceof MainLayoutController main)
+            main.navProdutos();
+    }
+
+    @FXML
+    public void limpar() {
+        campoCodigo.clear(); campoNome.clear(); campoDescricao.clear();
+        campoQuantidade.clear(); campoValorManual.clear();
+        comboMaterial.setValue(null); campoQtdMaterial.clear();
+        materiaisSelecionados.clear(); quantidades.clear();
+        listaMateriais.getChildren().clear();
+        rbPrecoMateriais.setSelected(true);
+        campoValorManual.setDisable(true);
+        secaoMateriais.setDisable(false);
+        previewNome.setText("Nome do produto");
+        previewCodigo.setText("—");
+        previewValor.setText("R$ —");
+        previewQuantidade.setText("—");
+        previewDescricao.setText("Sem descricao.");
+        previewMateriais.getChildren().clear();
+        labelStatus.setText("");
+    }
+
+    // ── Utilitários ────────────────────────────────────────────────────────
+
+    private void mostrarBannerSucesso(String mensagem) {
+        bannerMensagem.setText(mensagem);
+        bannerSucesso.setVisible(true);
+        bannerSucesso.setManaged(true);
+        new Thread(() -> {
+            try { Thread.sleep(4000); } catch (InterruptedException ignored) {}
+            javafx.application.Platform.runLater(() -> {
+                bannerSucesso.setVisible(false);
+                bannerSucesso.setManaged(false);
+            });
+        }).start();
+    }
+
+    private void setStatus(String msg, boolean erro) {
+        labelStatus.setText(msg);
+        labelStatus.setStyle(erro
+                ? "-fx-text-fill: #D31946; -fx-font-size: 15px;"
+                : "-fx-text-fill: #2e7d32; -fx-font-size: 15px;");
+    }
+}

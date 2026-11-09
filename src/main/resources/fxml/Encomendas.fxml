@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.managementsystem.demo1.controller.EncomendasController"
+            style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="32" right="32" bottom="24" left="32"/>
+    </padding>
+
+    <!-- ── TOP ── -->
+    <top>
+        <VBox spacing="0">
+            <Label text="Encomendas"
+                   style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+            <HBox spacing="12" alignment="CENTER_LEFT" style="-fx-padding: 16 0 16 0;">
+                <TextField fx:id="campoBusca"
+                           promptText="Buscar encomenda"
+                           prefWidth="300"
+                           styleClass="busca-field"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="+ Nova Encomenda"
+                        onAction="#abrirFormCadastro"
+                        styleClass="btn-criar"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <!-- ── CENTER: tabela + painel de detalhes ── -->
+    <center>
+        <HBox spacing="16">
+
+            <!-- Tabela -->
+            <VBox spacing="0" styleClass="card-tabela" HBox.hgrow="ALWAYS">
+
+                <Label text="Produtos personalizados" styleClass="card-titulo"/>
+
+                <TableView fx:id="tabelaEncomendas"
+                           VBox.vgrow="ALWAYS"
+                           styleClass="tabela-produtos">
+                    <columns>
+                        <TableColumn fx:id="colNome"   text="Nome"          prefWidth="240"/>
+                        <TableColumn fx:id="colCodigo" text="Código"        prefWidth="80"/>
+                        <TableColumn fx:id="colPrazo"  text="Prazo (dias)"  prefWidth="110"/>
+                        <TableColumn fx:id="colValor"  text="Valor"         prefWidth="90"/>
+                    </columns>
+                    <placeholder>
+                        <Label text="Nenhuma encomenda encontrada." style="-fx-text-fill: #aaa;"/>
+                    </placeholder>
+                </TableView>
+
+                <!-- Rodapé -->
+                <HBox alignment="CENTER_LEFT" styleClass="rodape-tabela">
+                    <Label fx:id="labelTotal" text="Total: 0" styleClass="rodape-label-total"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <HBox spacing="6" alignment="CENTER">
+                        <Button fx:id="btnAnterior" text="&#8249;" onAction="#paginaAnterior" styleClass="btn-pagina"/>
+                        <Label  fx:id="labelPagina" text="Página 1"                           styleClass="rodape-label-pagina"/>
+                        <Button fx:id="btnProximo"  text="&#8250;" onAction="#proximaPagina"  styleClass="btn-pagina"/>
+                    </HBox>
+                </HBox>
+
+            </VBox>
+
+            <!-- Painel de detalhes -->
+            <ScrollPane fx:id="painelDetalhes"
+                        fitToWidth="true"
+                        prefWidth="340" minWidth="340" maxWidth="340"
+                        visible="false" managed="false"
+                        styleClass="painel-detalhes-scroll">
+                <content>
+                    <VBox spacing="12" style="-fx-padding: 20;">
+
+                        <HBox alignment="CENTER_LEFT" spacing="8">
+                            <Label fx:id="detNome" text="—" styleClass="detalhe-nome"
+                                   HBox.hgrow="ALWAYS" wrapText="true"/>
+                            <Label fx:id="detCodigo" text="—" styleClass="detalhe-codigo-badge"/>
+                        </HBox>
+
+                        <Label fx:id="detValor" text="R$ —" styleClass="detalhe-valor"/>
+
+                        <HBox alignment="CENTER_LEFT" spacing="6">
+                            <Label text="Prazo:" styleClass="detalhe-info-label"/>
+                            <Label fx:id="detPrazo" text="—" styleClass="detalhe-info-valor"/>
+                        </HBox>
+
+                        <Separator/>
+
+                        <VBox styleClass="detalhe-secao" spacing="6">
+                            <Label text="Descrição" styleClass="detalhe-secao-titulo"/>
+                            <Label fx:id="detDescricao" text="—" wrapText="true"
+                                   styleClass="detalhe-secao-texto"/>
+                        </VBox>
+
+                        <VBox styleClass="detalhe-secao" spacing="6">
+                            <Label text="Observações" styleClass="detalhe-secao-titulo"/>
+                            <Label fx:id="detObservacoes" text="—" wrapText="true"
+                                   styleClass="detalhe-secao-texto"/>
+                        </VBox>
+
+                        <VBox fx:id="secaoMateriais" spacing="8">
+                            <Label text="Materiais utilizados" styleClass="detalhe-secao-titulo"/>
+                            <FlowPane fx:id="painelMateriais" hgap="8" vgap="8"/>
+                        </VBox>
+
+                        <Separator/>
+
+                        <HBox spacing="12" alignment="CENTER_LEFT">
+                            <Button text="Deletar"
+                                    onAction="#deletarEncomenda"
+                                    styleClass="btn-deletar"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button text="Editar Dados"
+                                    onAction="#editarEncomenda"
+                                    styleClass="btn-editar"/>
+                        </HBox>
+
+                    </VBox>
+                </content>
+            </ScrollPane>
+
+        </HBox>
+    </center>
+
+</BorderPane>

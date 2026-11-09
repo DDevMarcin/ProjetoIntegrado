@@ -6,6 +6,7 @@
 CREATE TABLE IF NOT EXISTS material (
     id_material         INTEGER PRIMARY KEY AUTOINCREMENT,
     nome                VARCHAR(255)    NOT NULL UNIQUE,
+    cor                 VARCHAR(50)     NOT NULL DEFAULT '',
     unidade_medida      VARCHAR(10)     NOT NULL,
     preco_unidade       NUMERIC(10,2)   NOT NULL,
     quantidade_estoque  NUMERIC(10,2)   NOT NULL DEFAULT 0

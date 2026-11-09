@@ -1,5 +1,6 @@
 package com.managementsystem.demo1.controller;
 
+import com.managementsystem.demo1.model.Material;
 import com.managementsystem.demo1.model.Produto;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -66,14 +67,59 @@ public class MainLayoutController {
         loadPage("/fxml/Produtos.fxml");
     }
 
-    public void navCadastrarPrePronto() {
+    public void navCadastrarProduto() {
         setActive(btnProdutos);
-        loadPage("/fxml/CadastrarPrePronto.fxml");
+        loadPage("/fxml/CadastrarProduto.fxml");
     }
 
+    /** @deprecated Use navCadastrarProduto() */
+    public void navCadastrarPrePronto() {
+        navCadastrarProduto();
+    }
+
+    /** @deprecated Use navCadastrarProduto() */
     public void navCadastrarPersonalizado() {
-        setActive(btnProdutos);
-        loadPage("/fxml/CadastrarPersonalizado.fxml");
+        navCadastrarProduto();
+    }
+
+    public void navCadastrarMaterial() {
+        setActive(btnEstoque);
+        loadPage("/fxml/CadastrarMaterial.fxml");
+    }
+
+    public void navEditarMaterial(Material material) {
+        setActive(btnEstoque);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/EditarMaterial.fxml"));
+            loader.setControllerFactory(springContext::getBean);
+            Node page = loader.load();
+            EditarMaterialController controller = loader.getController();
+            controller.setMaterial(material);
+            contentArea.getChildren().setAll(page);
+        } catch (Exception e) {
+            e.printStackTrace();
+            javafx.scene.control.Label erro = new javafx.scene.control.Label("Erro ao abrir edição:\n" + e.getMessage());
+            erro.setStyle("-fx-text-fill: #D31946; -fx-font-size: 15px; -fx-padding: 20;");
+            contentArea.getChildren().setAll(erro);
+        }
+    }
+
+    public void navRegistrarMovimentacao(Material material, com.managementsystem.demo1.model.TipoMovimentacaoMaterial tipo) {
+        setActive(btnEstoque);
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/RegistrarMovimentacao.fxml"));
+            loader.setControllerFactory(springContext::getBean);
+            Node page = loader.load();
+            RegistrarMovimentacaoController controller = loader.getController();
+            controller.setContexto(material, tipo);
+            controller.aplicarContexto();
+            contentArea.getChildren().setAll(page);
+        } catch (Exception e) {
+            e.printStackTrace();
+            javafx.scene.control.Label erro = new javafx.scene.control.Label("Erro ao carregar tela:\n" + e.getMessage());
+            erro.setStyle("-fx-text-fill: #D31946; -fx-font-size: 15px; -fx-padding: 20;");
+            contentArea.getChildren().setAll(erro);
+        }
     }
 
     public void navEditarProduto(Produto produto) {
@@ -99,13 +145,18 @@ public class MainLayoutController {
     @FXML
     public void navEncomendas() {
         setActive(btnEncomendas);
-        loadPage("/fxml/Placeholder.fxml");
+        loadPage("/fxml/Encomendas.fxml");
+    }
+
+    public void navCadastrarEncomenda() {
+        setActive(btnEncomendas);
+        loadPage("/fxml/CadastrarEncomenda.fxml");
     }
 
     @FXML
     public void navEstoque() {
         setActive(btnEstoque);
-        loadPage("/fxml/Placeholder.fxml");
+        loadPage("/fxml/Estoque.fxml");
     }
 
     @FXML
