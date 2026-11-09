@@ -45,3 +45,16 @@ CREATE TABLE IF NOT EXISTS movimentacao_material (
     data_hora        TIMESTAMP       NOT NULL,
     FOREIGN KEY (id_material) REFERENCES material(id_material) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS movimentacao_financeira (
+    id_movimentacao     INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao           VARCHAR(255)    NOT NULL,
+    valor               NUMERIC(10,2)   NOT NULL,
+    tipo                VARCHAR(20)     NOT NULL CHECK (tipo IN ('RECEITA', 'DESPESA')),
+    categoria           VARCHAR(100),
+    situacao            VARCHAR(20)     NOT NULL DEFAULT 'PAGO' CHECK (situacao IN ('PENDENTE', 'PAGO', 'CANCELADO')),
+    data_movimentacao   DATE            NOT NULL,
+    data_vencimento     DATE,
+    observacoes         VARCHAR(500)
+);
+
