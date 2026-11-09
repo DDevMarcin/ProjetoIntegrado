@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 @Entity
 @Table(name = "produto_material")
 @IdClass(ProdutoMaterialId.class)
+@SuppressWarnings("JpaDataSourceORMInspection")
 public class ProdutoMaterial {
 
     @Id
@@ -23,7 +24,7 @@ public class ProdutoMaterial {
     private Produto produto;
 
     @Id
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
             name = "id_material",
             referencedColumnName = "id_material",

@@ -6,7 +6,9 @@ import com.managementsystem.demo1.service.ItemMaterialInput;
 import com.managementsystem.demo1.service.ProdutoService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,7 +58,7 @@ public class ProdutoRestController {
         try {
             List<ItemMaterialInput> itens = dto.materiais() == null ? List.of() :
                     dto.materiais().stream()
-                            .map(m -> new ItemMaterialInput(m.idMaterial(), m.quantidadeUtilizada()))
+                            .map(m -> m == null ? null : new ItemMaterialInput(m.idMaterial(), m.quantidadeUtilizada()))
                             .toList();
 
             Produto produto = produtoService.cadastrarComMateriais(
@@ -129,5 +131,15 @@ public class ProdutoRestController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("erro", e.getMessage()));
         }
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, String>> tratarIdInvalido(MethodArgumentTypeMismatchException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", "Identificador de produto inválido."));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> tratarJsonInvalido(HttpMessageNotReadableException e) {
+        return ResponseEntity.badRequest().body(Map.of("erro", "Formato de requisição inválido ou campos incompatíveis."));
     }
 }

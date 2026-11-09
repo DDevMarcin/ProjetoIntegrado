@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.managementsystem.demo1.controller.DashboardController"
+      spacing="0">
+
+    <padding>
+        <Insets top="36" right="36" bottom="36" left="36"/>
+    </padding>
+
+    <Label text="Dashboard"
+           style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
+
+    <Label text="Bem-vinda ao sistema de gestão."
+           style="-fx-font-size: 14px; -fx-text-fill: #888; -fx-padding: 6 0 0 0;"/>
+
+</VBox>
