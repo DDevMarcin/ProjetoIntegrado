@@ -36,15 +36,9 @@ public class MovimentacaoFinanceiraService {
 
         receita.setTipo(TipoMovimentacaoFinanceira.RECEITA);
 
-        validarDadosMovimentacao(receita);
+        validarDadosMovimentacao(receita, "receita", false);
 
-        receita.setDescricao(receita.getDescricao().trim());
-        receita.setCategoria(limparCampoOpcional(receita.getCategoria()));
-        receita.setObservacoes(limparCampoOpcional(receita.getObservacoes()));
-
-        if (receita.getSituacao() == null) {
-            receita.setSituacao(SituacaoMovimentacaoFinanceira.PAGO);
-        }
+        normalizarCamposComuns(receita);
 
         return movimentacaoFinanceiraRepository.save(receita);
     }
@@ -83,6 +77,66 @@ public class MovimentacaoFinanceiraService {
         return cadastrarReceita(receita);
     }
 
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesa(MovimentacaoFinanceira despesa) {
+        if (despesa == null) {
+            throw new IllegalArgumentException("Despesa não pode ser nula.");
+        }
+
+        if (despesa.getTipo() != null && despesa.getTipo() != TipoMovimentacaoFinanceira.DESPESA) {
+            throw new IllegalArgumentException(
+                    "Não é permitido cadastrar uma movimentação do tipo " + despesa.getTipo() + " como despesa."
+            );
+        }
+
+        despesa.setTipo(TipoMovimentacaoFinanceira.DESPESA);
+
+        validarDadosMovimentacao(despesa, "despesa", true);
+
+        normalizarCamposComuns(despesa);
+
+        return movimentacaoFinanceiraRepository.save(despesa);
+    }
+
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesa(String descricao,
+                                                   BigDecimal valor,
+                                                   String categoria,
+                                                   LocalDate dataMovimentacao) {
+        MovimentacaoFinanceira despesa = new MovimentacaoFinanceira(
+                descricao,
+                valor,
+                TipoMovimentacaoFinanceira.DESPESA,
+                categoria,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                dataMovimentacao,
+                null,
+                null
+        );
+        return cadastrarDespesa(despesa);
+    }
+
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesa(String descricao,
+                                                   BigDecimal valor,
+                                                   String categoria,
+                                                   SituacaoMovimentacaoFinanceira situacao,
+                                                   LocalDate dataMovimentacao,
+                                                   LocalDate dataVencimento,
+                                                   String observacoes) {
+        MovimentacaoFinanceira despesa = new MovimentacaoFinanceira(
+                descricao,
+                valor,
+                TipoMovimentacaoFinanceira.DESPESA,
+                categoria,
+                situacao,
+                dataMovimentacao,
+                dataVencimento,
+                observacoes
+        );
+        return cadastrarDespesa(despesa);
+    }
+
     @Transactional(readOnly = true)
     public List<MovimentacaoFinanceira> listarReceitas() {
         return movimentacaoFinanceiraRepository
@@ -107,17 +161,53 @@ public class MovimentacaoFinanceiraService {
                 .orElseThrow(() -> new NoSuchElementException("Receita não encontrada: id " + id));
     }
 
-    private void validarDadosMovimentacao(MovimentacaoFinanceira movimentacao) {
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarDespesas() {
+        return movimentacaoFinanceiraRepository
+                .findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(TipoMovimentacaoFinanceira.DESPESA);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<MovimentacaoFinanceira> buscarDespesaPorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return movimentacaoFinanceiraRepository.findById(id)
+                .filter(m -> m.getTipo() == TipoMovimentacaoFinanceira.DESPESA);
+    }
+
+    @Transactional(readOnly = true)
+    public MovimentacaoFinanceira obterDespesaPorId(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID da despesa é obrigatório.");
+        }
+        return buscarDespesaPorId(id)
+                .orElseThrow(() -> new NoSuchElementException("Despesa não encontrada: id " + id));
+    }
+
+    private void validarDadosMovimentacao(MovimentacaoFinanceira movimentacao,
+                                          String rotuloTipo,
+                                          boolean exigirCategoria) {
         if (movimentacao.getDescricao() == null || movimentacao.getDescricao().isBlank()) {
-            throw new IllegalArgumentException("Descrição da receita é obrigatória.");
+            throw new IllegalArgumentException("Descrição da " + rotuloTipo + " é obrigatória.");
         }
 
         if (movimentacao.getDescricao().trim().length() > 255) {
-            throw new IllegalArgumentException("Descrição da receita não pode ultrapassar 255 caracteres.");
+            throw new IllegalArgumentException("Descrição da " + rotuloTipo + " não pode ultrapassar 255 caracteres.");
         }
 
         if (movimentacao.getValor() == null || movimentacao.getValor().signum() <= 0) {
-            throw new IllegalArgumentException("Valor da receita deve ser maior que zero.");
+            throw new IllegalArgumentException("Valor da " + rotuloTipo + " deve ser maior que zero.");
+        }
+
+        if (exigirCategoria && (movimentacao.getCategoria() == null || movimentacao.getCategoria().isBlank())) {
+            throw new IllegalArgumentException("Categoria da " + rotuloTipo + " é obrigatória.");
+        }
+
+        if (movimentacao.getCategoria() != null
+                && !movimentacao.getCategoria().isBlank()
+                && movimentacao.getCategoria().trim().length() > 100) {
+            throw new IllegalArgumentException("Categoria não pode ultrapassar 100 caracteres.");
         }
 
         if (movimentacao.getDataMovimentacao() == null) {
@@ -131,16 +221,20 @@ public class MovimentacaoFinanceiraService {
             );
         }
 
-        if (movimentacao.getCategoria() != null
-                && !movimentacao.getCategoria().isBlank()
-                && movimentacao.getCategoria().trim().length() > 100) {
-            throw new IllegalArgumentException("Categoria não pode ultrapassar 100 caracteres.");
-        }
-
         if (movimentacao.getObservacoes() != null
                 && !movimentacao.getObservacoes().isBlank()
                 && movimentacao.getObservacoes().trim().length() > 500) {
             throw new IllegalArgumentException("Observações não podem ultrapassar 500 caracteres.");
+        }
+    }
+
+    private void normalizarCamposComuns(MovimentacaoFinanceira movimentacao) {
+        movimentacao.setDescricao(movimentacao.getDescricao().trim());
+        movimentacao.setCategoria(limparCampoOpcional(movimentacao.getCategoria()));
+        movimentacao.setObservacoes(limparCampoOpcional(movimentacao.getObservacoes()));
+
+        if (movimentacao.getSituacao() == null) {
+            movimentacao.setSituacao(SituacaoMovimentacaoFinanceira.PAGO);
         }
     }
 
@@ -151,4 +245,3 @@ public class MovimentacaoFinanceiraService {
         return valor.trim();
     }
 }
-

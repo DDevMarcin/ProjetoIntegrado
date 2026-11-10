@@ -267,5 +267,193 @@ class MovimentacaoFinanceiraServiceTest {
                 movimentacaoFinanceiraService.obterReceitaPorId(idDespesa)
         );
     }
+
+    // ── Testes de Cadastro e Consulta de Despesas ──
+
+    @Test
+    void deveCadastrarDespesaCompletaComSucesso() {
+        LocalDate dataMov = LocalDate.of(2026, 11, 9);
+        LocalDate dataVenc = LocalDate.of(2026, 11, 20);
+
+        MovimentacaoFinanceira salva = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Contas de Cristal Tcheco",
+                new BigDecimal("195.80"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                dataMov,
+                dataVenc,
+                "Boleto parcelado fornecedor SP"
+        );
+
+        assertNotNull(salva.getIdMovimentacao());
+        assertEquals("Compra de Contas de Cristal Tcheco", salva.getDescricao());
+        assertEquals(0, new BigDecimal("195.80").compareTo(salva.getValor()));
+        assertEquals(TipoMovimentacaoFinanceira.DESPESA, salva.getTipo());
+        assertEquals("Insumos", salva.getCategoria());
+        assertEquals(SituacaoMovimentacaoFinanceira.PENDENTE, salva.getSituacao());
+        assertEquals(dataMov, salva.getDataMovimentacao());
+        assertEquals(dataVenc, salva.getDataVencimento());
+        assertEquals("Boleto parcelado fornecedor SP", salva.getObservacoes());
+
+        Optional<MovimentacaoFinanceira> doBanco =
+                movimentacaoFinanceiraRepository.findById(salva.getIdMovimentacao());
+        assertTrue(doBanco.isPresent());
+        assertEquals(TipoMovimentacaoFinanceira.DESPESA, doBanco.get().getTipo());
+    }
+
+    @Test
+    void deveCadastrarDespesaComCamposObrigatoriosAssumindoSituacaoPago() {
+        LocalDate dataMov = LocalDate.of(2026, 11, 9);
+
+        MovimentacaoFinanceira salva = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Fio Encerado",
+                new BigDecimal("42.00"),
+                "   Insumos   ",
+                dataMov
+        );
+
+        assertNotNull(salva.getIdMovimentacao());
+        assertEquals(TipoMovimentacaoFinanceira.DESPESA, salva.getTipo());
+        assertEquals(SituacaoMovimentacaoFinanceira.PAGO, salva.getSituacao());
+        assertEquals("Insumos", salva.getCategoria());
+        assertEquals(dataMov, salva.getDataMovimentacao());
+        assertNull(salva.getDataVencimento());
+        assertNull(salva.getObservacoes());
+    }
+
+    @Test
+    void deveRejeitarCadastroDeDespesaNulaOuComTipoReceita() {
+        IllegalArgumentException exNula = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa(null)
+        );
+        assertEquals("Despesa não pode ser nula.", exNula.getMessage());
+
+        MovimentacaoFinanceira receitaDisfarcada = new MovimentacaoFinanceira(
+                "Venda de Terço",
+                new BigDecimal("60.00"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 9),
+                null,
+                null
+        );
+
+        IllegalArgumentException exTipo = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa(receitaDisfarcada)
+        );
+        assertTrue(exTipo.getMessage().contains("Não é permitido cadastrar uma movimentação do tipo RECEITA como despesa"));
+        assertEquals(0, movimentacaoFinanceiraRepository.count());
+    }
+
+    @Test
+    void deveRejeitarDespesaSemDescricaoOuComDescricaoAcimaDe255Caracteres() {
+        LocalDate hoje = LocalDate.of(2026, 11, 9);
+
+        IllegalArgumentException exNula = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa(null, new BigDecimal("50.00"), "Insumos", hoje)
+        );
+        assertEquals("Descrição da despesa é obrigatória.", exNula.getMessage());
+
+        IllegalArgumentException exBranco = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("   ", new BigDecimal("50.00"), "Insumos", hoje)
+        );
+        assertEquals("Descrição da despesa é obrigatória.", exBranco.getMessage());
+
+        IllegalArgumentException exLonga = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("D".repeat(256), new BigDecimal("50.00"), "Insumos", hoje)
+        );
+        assertEquals("Descrição da despesa não pode ultrapassar 255 caracteres.", exLonga.getMessage());
+    }
+
+    @Test
+    void deveRejeitarDespesaSemCategoriaOuComCategoriaAcimaDe100Caracteres() {
+        LocalDate hoje = LocalDate.of(2026, 11, 9);
+
+        IllegalArgumentException exNula = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Compra de caixas", new BigDecimal("35.00"), null, hoje)
+        );
+        assertEquals("Categoria da despesa é obrigatória.", exNula.getMessage());
+
+        IllegalArgumentException exBranco = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Compra de caixas", new BigDecimal("35.00"), "   ", hoje)
+        );
+        assertEquals("Categoria da despesa é obrigatória.", exBranco.getMessage());
+
+        IllegalArgumentException exLonga = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Compra de caixas", new BigDecimal("35.00"), "C".repeat(101), hoje)
+        );
+        assertEquals("Categoria não pode ultrapassar 100 caracteres.", exLonga.getMessage());
+    }
+
+    @Test
+    void deveRejeitarDespesaComValorNuloZeroOuNegativo() {
+        LocalDate hoje = LocalDate.of(2026, 11, 9);
+
+        IllegalArgumentException exNulo = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Frete", null, "Logística", hoje)
+        );
+        assertEquals("Valor da despesa deve ser maior que zero.", exNulo.getMessage());
+
+        IllegalArgumentException exZero = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Frete", BigDecimal.ZERO, "Logística", hoje)
+        );
+        assertEquals("Valor da despesa deve ser maior que zero.", exZero.getMessage());
+
+        IllegalArgumentException exNeg = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Frete", new BigDecimal("-5.00"), "Logística", hoje)
+        );
+        assertEquals("Valor da despesa deve ser maior que zero.", exNeg.getMessage());
+    }
+
+    @Test
+    void deveRejeitarDespesaSemDataMovimentacaoOuComDataVencimentoAnterior() {
+        IllegalArgumentException exSemData = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa("Frete", new BigDecimal("25.00"), "Logística", null)
+        );
+        assertEquals("Data da movimentação é obrigatória.", exSemData.getMessage());
+
+        IllegalArgumentException exVencAnterior = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa(
+                        "Conta de Energia",
+                        new BigDecimal("110.00"),
+                        "Custos Fixos",
+                        SituacaoMovimentacaoFinanceira.PENDENTE,
+                        LocalDate.of(2026, 11, 10),
+                        LocalDate.of(2026, 11, 5),
+                        null
+                )
+        );
+        assertEquals("Data de vencimento não pode ser anterior à data da movimentação.", exVencAnterior.getMessage());
+    }
+
+    @Test
+    void deveListarEBuscarApenasMovimentacoesDoTipoDespesa() {
+        MovimentacaoFinanceira despesa = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Embalagens",
+                new BigDecimal("64.00"),
+                "Embalagens",
+                LocalDate.of(2026, 11, 9)
+        );
+
+        MovimentacaoFinanceira receita = movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Terço",
+                new BigDecimal("45.00"),
+                LocalDate.of(2026, 11, 9)
+        );
+
+        List<MovimentacaoFinanceira> despesas = movimentacaoFinanceiraService.listarDespesas();
+        assertEquals(1, despesas.size());
+        assertEquals(despesa.getIdMovimentacao(), despesas.get(0).getIdMovimentacao());
+
+        assertTrue(movimentacaoFinanceiraService.buscarDespesaPorId(despesa.getIdMovimentacao()).isPresent());
+        assertFalse(movimentacaoFinanceiraService.buscarDespesaPorId(receita.getIdMovimentacao()).isPresent());
+        assertFalse(movimentacaoFinanceiraService.buscarDespesaPorId(null).isPresent());
+
+        Long idReceita = receita.getIdMovimentacao();
+        assertThrows(NoSuchElementException.class, () ->
+                movimentacaoFinanceiraService.obterDespesaPorId(idReceita)
+        );
+    }
 }
 
