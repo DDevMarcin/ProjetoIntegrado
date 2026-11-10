@@ -34,9 +34,13 @@ class MovimentacaoFinanceiraRestControllerTest {
     @Autowired
     private MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository;
 
+    @Autowired
+    private com.managementsystem.demo1.service.CategoriaDespesaService categoriaDespesaService;
+
     @BeforeEach
     void setUp() {
         movimentacaoFinanceiraRepository.deleteAll();
+        categoriaDespesaService.garantirCategoriasPadrao();
     }
 
     @Test

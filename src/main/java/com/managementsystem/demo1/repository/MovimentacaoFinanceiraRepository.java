@@ -31,5 +31,16 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
     List<MovimentacaoFinanceira> findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(LocalDate dataInicio, LocalDate dataFim);
 
     List<MovimentacaoFinanceira> findByDescricaoContainingIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(String descricao);
+
+    List<MovimentacaoFinanceira> findByCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(Long idCategoria);
+
+    List<MovimentacaoFinanceira> findByTipoAndCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            Long idCategoria
+    );
+
+    boolean existsByCategoriaDespesa_IdCategoria(Long idCategoria);
+
+    boolean existsByTipoAndCategoriaIgnoreCase(TipoMovimentacaoFinanceira tipo, String categoria);
 }
 
