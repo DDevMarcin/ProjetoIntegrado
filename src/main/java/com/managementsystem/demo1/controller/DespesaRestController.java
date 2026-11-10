@@ -1,5 +1,6 @@
 package com.managementsystem.demo1.controller;
 
+import com.managementsystem.demo1.model.CategoriaDespesa;
 import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
@@ -12,8 +13,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping({"/despesas", "/financeiro/despesas", "/movimentacoes-financeiras/despesas"})
@@ -29,6 +30,8 @@ public class DespesaRestController {
             String descricao,
             BigDecimal valor,
             String categoria,
+            Long idCategoria,
+            Long idCategoriaDespesa,
             SituacaoMovimentacaoFinanceira situacao,
             LocalDate dataMovimentacao,
             LocalDate dataPagamento,
@@ -45,7 +48,7 @@ public class DespesaRestController {
                 LocalDate dataVencimento,
                 String observacoes
         ) {
-            this(descricao, valor, categoria, situacao, dataMovimentacao, null, dataVencimento, observacoes, null);
+            this(descricao, valor, categoria, null, null, situacao, dataMovimentacao, null, dataVencimento, observacoes, null);
         }
     }
 
@@ -65,13 +68,29 @@ public class DespesaRestController {
                         .body(Map.of("erro", "Data da movimentação e data de pagamento informadas divergem."));
             }
 
+            if (dto.idCategoria() != null
+                    && dto.idCategoriaDespesa() != null
+                    && !dto.idCategoria().equals(dto.idCategoriaDespesa())) {
+                return ResponseEntity.badRequest()
+                        .body(Map.of("erro", "IDs de categoria informados divergem."));
+            }
+
             LocalDate dataEfetiva = dto.dataMovimentacao() != null
                     ? dto.dataMovimentacao()
                     : dto.dataPagamento();
 
+            Long idCategoriaEfetivo = dto.idCategoria() != null
+                    ? dto.idCategoria()
+                    : dto.idCategoriaDespesa();
+
             MovimentacaoFinanceira despesa = new MovimentacaoFinanceira();
             despesa.setDescricao(dto.descricao());
             despesa.setValor(dto.valor());
+            if (idCategoriaEfetivo != null) {
+                CategoriaDespesa referencia = new CategoriaDespesa();
+                referencia.setIdCategoria(idCategoriaEfetivo);
+                despesa.setCategoriaDespesa(referencia);
+            }
             despesa.setCategoria(dto.categoria());
             despesa.setSituacao(dto.situacao());
             despesa.setDataMovimentacao(dataEfetiva);
@@ -90,10 +109,23 @@ public class DespesaRestController {
         }
     }
 
-    // GET /despesas
+    // GET /despesas (suporta filtro opcional por idCategoria ou categoria)
     @GetMapping
-    public List<MovimentacaoFinanceira> listar() {
-        return movimentacaoFinanceiraService.listarDespesas();
+    public ResponseEntity<?> listar(
+            @RequestParam(value = "idCategoria", required = false) Long idCategoria,
+            @RequestParam(value = "categoria", required = false) String categoria
+    ) {
+        try {
+            if (idCategoria != null) {
+                return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesasPorCategoria(idCategoria));
+            }
+            if (categoria != null && !categoria.isBlank()) {
+                return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesasPorCategoria(categoria));
+            }
+            return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesas());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     // GET /despesas/{id}
@@ -116,4 +148,3 @@ public class DespesaRestController {
                 .body(Map.of("erro", "Formato de requisição inválido ou campos incompatíveis."));
     }
 }
-

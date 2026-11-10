@@ -4,9 +4,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
@@ -34,6 +37,10 @@ public class MovimentacaoFinanceira {
 
     @Column(length = 100)
     private String categoria;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "id_categoria_despesa")
+    private CategoriaDespesa categoriaDespesa;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
@@ -138,6 +145,17 @@ public class MovimentacaoFinanceira {
 
     public void setCategoria(String categoria) {
         this.categoria = categoria;
+    }
+
+    public CategoriaDespesa getCategoriaDespesa() {
+        return categoriaDespesa;
+    }
+
+    public void setCategoriaDespesa(CategoriaDespesa categoriaDespesa) {
+        this.categoriaDespesa = categoriaDespesa;
+        if (categoriaDespesa != null && categoriaDespesa.getNome() != null && !categoriaDespesa.getNome().isBlank()) {
+            this.categoria = categoriaDespesa.getNome().trim();
+        }
     }
 
     public SituacaoMovimentacaoFinanceira getSituacao() {

@@ -1,9 +1,12 @@
 package com.managementsystem.demo1.service;
 
+import com.managementsystem.demo1.model.CategoriaDespesa;
 import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
+import com.managementsystem.demo1.repository.CategoriaDespesaRepository;
 import com.managementsystem.demo1.repository.MovimentacaoFinanceiraRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,9 +20,17 @@ import java.util.Optional;
 public class MovimentacaoFinanceiraService {
 
     private final MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository;
+    private final CategoriaDespesaRepository categoriaDespesaRepository;
 
     public MovimentacaoFinanceiraService(MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository) {
+        this(movimentacaoFinanceiraRepository, null);
+    }
+
+    @Autowired
+    public MovimentacaoFinanceiraService(MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository,
+                                         CategoriaDespesaRepository categoriaDespesaRepository) {
         this.movimentacaoFinanceiraRepository = movimentacaoFinanceiraRepository;
+        this.categoriaDespesaRepository = categoriaDespesaRepository;
     }
 
     @Transactional
@@ -35,6 +46,7 @@ public class MovimentacaoFinanceiraService {
         }
 
         receita.setTipo(TipoMovimentacaoFinanceira.RECEITA);
+        receita.setCategoriaDespesa(null);
 
         validarDadosMovimentacao(receita, "receita", false);
 
@@ -93,6 +105,8 @@ public class MovimentacaoFinanceiraService {
 
         validarDadosMovimentacao(despesa, "despesa", true);
 
+        vincularCategoriaDespesa(despesa);
+
         normalizarCamposComuns(despesa);
 
         return movimentacaoFinanceiraRepository.save(despesa);
@@ -137,6 +151,82 @@ public class MovimentacaoFinanceiraService {
         return cadastrarDespesa(despesa);
     }
 
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesaPorCategoria(String descricao,
+                                                               BigDecimal valor,
+                                                               Long idCategoriaDespesa,
+                                                               LocalDate dataMovimentacao) {
+        return cadastrarDespesaPorCategoria(
+                descricao,
+                valor,
+                idCategoriaDespesa,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                dataMovimentacao,
+                null,
+                null
+        );
+    }
+
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesaPorCategoria(String descricao,
+                                                               BigDecimal valor,
+                                                               Long idCategoriaDespesa,
+                                                               SituacaoMovimentacaoFinanceira situacao,
+                                                               LocalDate dataMovimentacao,
+                                                               LocalDate dataVencimento,
+                                                               String observacoes) {
+        if (idCategoriaDespesa == null) {
+            throw new IllegalArgumentException("Categoria da despesa é obrigatória.");
+        }
+        CategoriaDespesa referencia = new CategoriaDespesa();
+        referencia.setIdCategoria(idCategoriaDespesa);
+        return cadastrarDespesaPorCategoria(
+                descricao,
+                valor,
+                referencia,
+                situacao,
+                dataMovimentacao,
+                dataVencimento,
+                observacoes
+        );
+    }
+
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesaPorCategoria(String descricao,
+                                                               BigDecimal valor,
+                                                               CategoriaDespesa categoriaDespesa,
+                                                               LocalDate dataMovimentacao) {
+        return cadastrarDespesaPorCategoria(
+                descricao,
+                valor,
+                categoriaDespesa,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                dataMovimentacao,
+                null,
+                null
+        );
+    }
+
+    @Transactional
+    public MovimentacaoFinanceira cadastrarDespesaPorCategoria(String descricao,
+                                                               BigDecimal valor,
+                                                               CategoriaDespesa categoriaDespesa,
+                                                               SituacaoMovimentacaoFinanceira situacao,
+                                                               LocalDate dataMovimentacao,
+                                                               LocalDate dataVencimento,
+                                                               String observacoes) {
+        MovimentacaoFinanceira despesa = new MovimentacaoFinanceira();
+        despesa.setDescricao(descricao);
+        despesa.setValor(valor);
+        despesa.setTipo(TipoMovimentacaoFinanceira.DESPESA);
+        despesa.setCategoriaDespesa(categoriaDespesa);
+        despesa.setSituacao(situacao);
+        despesa.setDataMovimentacao(dataMovimentacao);
+        despesa.setDataVencimento(dataVencimento);
+        despesa.setObservacoes(observacoes);
+        return cadastrarDespesa(despesa);
+    }
+
     @Transactional(readOnly = true)
     public List<MovimentacaoFinanceira> listarReceitas() {
         return movimentacaoFinanceiraRepository
@@ -165,6 +255,33 @@ public class MovimentacaoFinanceiraService {
     public List<MovimentacaoFinanceira> listarDespesas() {
         return movimentacaoFinanceiraRepository
                 .findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(TipoMovimentacaoFinanceira.DESPESA);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarDespesasPorCategoria(Long idCategoriaDespesa) {
+        if (idCategoriaDespesa == null) {
+            throw new IllegalArgumentException("ID da categoria de despesa é obrigatório.");
+        }
+        if (categoriaDespesaRepository != null && !categoriaDespesaRepository.existsById(idCategoriaDespesa)) {
+            throw new NoSuchElementException("Categoria de despesa não encontrada: id " + idCategoriaDespesa);
+        }
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        idCategoriaDespesa
+                );
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarDespesasPorCategoria(String nomeCategoria) {
+        if (nomeCategoria == null || nomeCategoria.isBlank()) {
+            return listarDespesas();
+        }
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        nomeCategoria.trim()
+                );
     }
 
     @Transactional(readOnly = true)
@@ -200,7 +317,12 @@ public class MovimentacaoFinanceiraService {
             throw new IllegalArgumentException("Valor da " + rotuloTipo + " deve ser maior que zero.");
         }
 
-        if (exigirCategoria && (movimentacao.getCategoria() == null || movimentacao.getCategoria().isBlank())) {
+        boolean possuiIdCategoria = movimentacao.getCategoriaDespesa() != null
+                && movimentacao.getCategoriaDespesa().getIdCategoria() != null;
+
+        if (exigirCategoria
+                && !possuiIdCategoria
+                && (movimentacao.getCategoria() == null || movimentacao.getCategoria().isBlank())) {
             throw new IllegalArgumentException("Categoria da " + rotuloTipo + " é obrigatória.");
         }
 
@@ -226,6 +348,55 @@ public class MovimentacaoFinanceiraService {
                 && movimentacao.getObservacoes().trim().length() > 500) {
             throw new IllegalArgumentException("Observações não podem ultrapassar 500 caracteres.");
         }
+    }
+
+    private void vincularCategoriaDespesa(MovimentacaoFinanceira despesa) {
+        if (categoriaDespesaRepository == null) {
+            return;
+        }
+
+        String nomeInformado = limparCampoOpcional(despesa.getCategoria());
+        Long idCategoriaInformado = despesa.getCategoriaDespesa() != null
+                ? despesa.getCategoriaDespesa().getIdCategoria()
+                : null;
+
+        if (idCategoriaInformado != null) {
+            CategoriaDespesa categoriaBanco = categoriaDespesaRepository.findById(idCategoriaInformado)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Categoria de despesa não encontrada para o ID informado: " + idCategoriaInformado
+                    ));
+
+            if (nomeInformado != null && !categoriaBanco.getNome().trim().equalsIgnoreCase(nomeInformado)) {
+                throw new IllegalArgumentException(
+                        "O nome da categoria informada diverge da categoria cadastrada para o ID "
+                                + idCategoriaInformado + "."
+                );
+            }
+
+            despesa.setCategoriaDespesa(categoriaBanco);
+            despesa.setCategoria(categoriaBanco.getNome().trim());
+            return;
+        }
+
+        if (nomeInformado != null) {
+            CategoriaDespesa categoriaBanco = buscarCategoriaPorNome(nomeInformado)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Categoria de despesa não encontrada: " + nomeInformado
+                    ));
+
+            despesa.setCategoriaDespesa(categoriaBanco);
+            despesa.setCategoria(categoriaBanco.getNome().trim());
+        }
+    }
+
+    private Optional<CategoriaDespesa> buscarCategoriaPorNome(String nomeTrim) {
+        Optional<CategoriaDespesa> direta = categoriaDespesaRepository.findByNomeIgnoreCase(nomeTrim);
+        if (direta.isPresent()) {
+            return direta;
+        }
+        return categoriaDespesaRepository.findAll().stream()
+                .filter(c -> c.getNome() != null && c.getNome().trim().equalsIgnoreCase(nomeTrim))
+                .findFirst();
     }
 
     private void normalizarCamposComuns(MovimentacaoFinanceira movimentacao) {

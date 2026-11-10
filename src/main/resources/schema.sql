@@ -47,15 +47,23 @@ CREATE TABLE IF NOT EXISTS movimentacao_material (
     FOREIGN KEY (id_material) REFERENCES material(id_material) ON DELETE CASCADE
 );
 
+CREATE TABLE IF NOT EXISTS categoria_despesa (
+    id_categoria        INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome                VARCHAR(100)    NOT NULL UNIQUE,
+    descricao           VARCHAR(255)
+);
+
 CREATE TABLE IF NOT EXISTS movimentacao_financeira (
-    id_movimentacao     INTEGER PRIMARY KEY AUTOINCREMENT,
-    descricao           VARCHAR(255)    NOT NULL,
-    valor               NUMERIC(10,2)   NOT NULL,
-    tipo                VARCHAR(20)     NOT NULL CHECK (tipo IN ('RECEITA', 'DESPESA')),
-    categoria           VARCHAR(100),
-    situacao            VARCHAR(20)     NOT NULL DEFAULT 'PAGO' CHECK (situacao IN ('PENDENTE', 'PAGO', 'CANCELADO')),
-    data_movimentacao   DATE            NOT NULL,
-    data_vencimento     DATE,
-    observacoes         VARCHAR(500)
+    id_movimentacao         INTEGER PRIMARY KEY AUTOINCREMENT,
+    descricao               VARCHAR(255)    NOT NULL,
+    valor                   NUMERIC(10,2)   NOT NULL,
+    tipo                    VARCHAR(20)     NOT NULL CHECK (tipo IN ('RECEITA', 'DESPESA')),
+    categoria               VARCHAR(100),
+    id_categoria_despesa    BIGINT,
+    situacao                VARCHAR(20)     NOT NULL DEFAULT 'PAGO' CHECK (situacao IN ('PENDENTE', 'PAGO', 'CANCELADO')),
+    data_movimentacao       DATE            NOT NULL,
+    data_vencimento         DATE,
+    observacoes             VARCHAR(500),
+    FOREIGN KEY (id_categoria_despesa) REFERENCES categoria_despesa(id_categoria)
 );
 
