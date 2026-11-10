@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -300,6 +301,180 @@ public class MovimentacaoFinanceiraService {
         }
         return buscarDespesaPorId(id)
                 .orElseThrow(() -> new NoSuchElementException("Despesa não encontrada: id " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarMovimentacoes() {
+        return movimentacaoFinanceiraRepository.findAllByOrderByDataMovimentacaoDescIdMovimentacaoDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarTodas() {
+        return listarMovimentacoes();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<MovimentacaoFinanceira> buscarPorId(Long id) {
+        if (id == null) {
+            return Optional.empty();
+        }
+        return movimentacaoFinanceiraRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<MovimentacaoFinanceira> buscarMovimentacaoPorId(Long id) {
+        return buscarPorId(id);
+    }
+
+    @Transactional(readOnly = true)
+    public MovimentacaoFinanceira obterPorId(Long id) {
+        if (id == null) {
+            throw new IllegalArgumentException("ID da movimentação financeira é obrigatório.");
+        }
+        return buscarPorId(id)
+                .orElseThrow(() -> new NoSuchElementException("Movimentação financeira não encontrada: id " + id));
+    }
+
+    @Transactional(readOnly = true)
+    public MovimentacaoFinanceira obterMovimentacaoPorId(Long id) {
+        return obterPorId(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarPorTipo(TipoMovimentacaoFinanceira tipo) {
+        if (tipo == null) {
+            return listarMovimentacoes();
+        }
+        return movimentacaoFinanceiraRepository
+                .findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarPorSituacao(SituacaoMovimentacaoFinanceira situacao) {
+        if (situacao == null) {
+            return listarMovimentacoes();
+        }
+        return movimentacaoFinanceiraRepository
+                .findBySituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(situacao);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarPorCategoria(String categoria) {
+        if (categoria == null || categoria.isBlank()) {
+            return listarMovimentacoes();
+        }
+        return movimentacaoFinanceiraRepository
+                .findByCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(categoria.trim());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        if (dataInicio == null || dataFim == null) {
+            throw new IllegalArgumentException("Data inicial e data final são obrigatórias para consulta por período.");
+        }
+        if (dataFim.isBefore(dataInicio)) {
+            throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
+        }
+        return movimentacaoFinanceiraRepository
+                .findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio, dataFim);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> buscarPorDescricao(String descricao) {
+        if (descricao == null || descricao.isBlank()) {
+            return listarMovimentacoes();
+        }
+        return movimentacaoFinanceiraRepository
+                .findByDescricaoContainingIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(descricao.trim());
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> consultar(TipoMovimentacaoFinanceira tipo,
+                                                  SituacaoMovimentacaoFinanceira situacao,
+                                                  String categoria) {
+        return consultar(tipo, situacao, categoria, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> consultar(TipoMovimentacaoFinanceira tipo,
+                                                  SituacaoMovimentacaoFinanceira situacao,
+                                                  String categoria,
+                                                  LocalDate dataInicio,
+                                                  LocalDate dataFim) {
+        return consultar(tipo, situacao, categoria, dataInicio, dataFim, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> consultar(TipoMovimentacaoFinanceira tipo,
+                                                  SituacaoMovimentacaoFinanceira situacao,
+                                                  String categoria,
+                                                  LocalDate dataInicio,
+                                                  LocalDate dataFim,
+                                                  String descricao) {
+        if (dataInicio != null && dataFim != null && dataFim.isBefore(dataInicio)) {
+            throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
+        }
+
+        String categoriaFiltrada = limparCampoOpcional(categoria);
+        String descricaoFiltrada = limparCampoOpcional(descricao);
+
+        boolean semPeriodo = dataInicio == null && dataFim == null;
+        boolean semDescricao = descricaoFiltrada == null;
+
+        if (tipo == null && situacao == null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+            return listarMovimentacoes();
+        }
+
+        if (tipo != null && situacao == null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo);
+        }
+
+        if (tipo == null && situacao != null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findBySituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(situacao);
+        }
+
+        if (tipo == null && situacao == null && categoriaFiltrada != null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(categoriaFiltrada);
+        }
+
+        if (tipo != null && situacao != null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo, situacao);
+        }
+
+        if (tipo != null && situacao == null && categoriaFiltrada != null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo, categoriaFiltrada);
+        }
+
+        if (tipo == null && situacao == null && categoriaFiltrada == null
+                && dataInicio != null && dataFim != null && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio, dataFim);
+        }
+
+        if (tipo == null && situacao == null && categoriaFiltrada == null && semPeriodo && descricaoFiltrada != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByDescricaoContainingIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(descricaoFiltrada);
+        }
+
+        String descricaoLower = descricaoFiltrada != null ? descricaoFiltrada.toLowerCase(Locale.ROOT) : null;
+
+        return listarMovimentacoes().stream()
+                .filter(m -> tipo == null || m.getTipo() == tipo)
+                .filter(m -> situacao == null || m.getSituacao() == situacao)
+                .filter(m -> categoriaFiltrada == null
+                        || (m.getCategoria() != null && m.getCategoria().trim().equalsIgnoreCase(categoriaFiltrada)))
+                .filter(m -> dataInicio == null
+                        || (m.getDataMovimentacao() != null && !m.getDataMovimentacao().isBefore(dataInicio)))
+                .filter(m -> dataFim == null
+                        || (m.getDataMovimentacao() != null && !m.getDataMovimentacao().isAfter(dataFim)))
+                .filter(m -> descricaoLower == null
+                        || (m.getDescricao() != null && m.getDescricao().toLowerCase(Locale.ROOT).contains(descricaoLower)))
+                .toList();
     }
 
     private void validarDadosMovimentacao(MovimentacaoFinanceira movimentacao,

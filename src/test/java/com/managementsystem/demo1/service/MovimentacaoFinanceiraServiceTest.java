@@ -461,6 +461,213 @@ class MovimentacaoFinanceiraServiceTest {
         );
     }
 
+    // ── Testes de Consulta Unificada de Movimentações Financeiras ──
+
+    @Test
+    void deveListarTodasAsMovimentacoesContemplandoReceitasEDespesasOrdenadasPorDataDesc() {
+        MovimentacaoFinanceira m1 = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Contas de Madeira",
+                new BigDecimal("85.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 2)
+        );
+
+        MovimentacaoFinanceira m2 = movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda de Terço São Bento",
+                new BigDecimal("120.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 8),
+                null,
+                null
+        );
+
+        MovimentacaoFinanceira m3 = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Embalagens",
+                new BigDecimal("45.00"),
+                "Embalagens",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 15),
+                "Boleto fornecedor"
+        );
+
+        List<MovimentacaoFinanceira> todas = movimentacaoFinanceiraService.listarMovimentacoes();
+        assertEquals(3, todas.size());
+        assertEquals(m2.getIdMovimentacao(), todas.get(0).getIdMovimentacao());
+        assertEquals(m3.getIdMovimentacao(), todas.get(1).getIdMovimentacao());
+        assertEquals(m1.getIdMovimentacao(), todas.get(2).getIdMovimentacao());
+
+        assertEquals(3, movimentacaoFinanceiraService.listarTodas().size());
+    }
+
+    @Test
+    void deveRetornarListaVaziaQuandoNaoExistiremMovimentacoesCadastradas() {
+        List<MovimentacaoFinanceira> resultado = movimentacaoFinanceiraService.listarMovimentacoes();
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    void deveBuscarEObterMovimentacaoPorIdTantoReceitaQuantoDespesa() {
+        MovimentacaoFinanceira receita = movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Terço Cristal",
+                new BigDecimal("110.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 9),
+                null,
+                null
+        );
+
+        MovimentacaoFinanceira despesa = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra Fio de Seda",
+                new BigDecimal("35.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 9)
+        );
+
+        Optional<MovimentacaoFinanceira> recOpt = movimentacaoFinanceiraService.buscarPorId(receita.getIdMovimentacao());
+        assertTrue(recOpt.isPresent());
+        assertEquals(TipoMovimentacaoFinanceira.RECEITA, recOpt.get().getTipo());
+
+        Optional<MovimentacaoFinanceira> despOpt = movimentacaoFinanceiraService.buscarMovimentacaoPorId(despesa.getIdMovimentacao());
+        assertTrue(despOpt.isPresent());
+        assertEquals(TipoMovimentacaoFinanceira.DESPESA, despOpt.get().getTipo());
+
+        assertFalse(movimentacaoFinanceiraService.buscarPorId(null).isPresent());
+        assertFalse(movimentacaoFinanceiraService.buscarPorId(999999L).isPresent());
+
+        MovimentacaoFinanceira obtida = movimentacaoFinanceiraService.obterPorId(receita.getIdMovimentacao());
+        assertEquals(receita.getIdMovimentacao(), obtida.getIdMovimentacao());
+        assertEquals(despesa.getIdMovimentacao(),
+                movimentacaoFinanceiraService.obterMovimentacaoPorId(despesa.getIdMovimentacao()).getIdMovimentacao());
+
+        assertThrows(IllegalArgumentException.class, () -> movimentacaoFinanceiraService.obterPorId(null));
+        assertThrows(NoSuchElementException.class, () -> movimentacaoFinanceiraService.obterPorId(999999L));
+    }
+
+    @Test
+    void deveConsultarMovimentacoesComFiltrosIndividuaisECombinados() {
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Contas e Cristais",
+                new BigDecimal("150.00"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 1),
+                "Nota 101"
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Terço Casamento",
+                new BigDecimal("220.00"),
+                "Encomendas",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 20),
+                "Sinal pendente"
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Terço São Bento",
+                new BigDecimal("65.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 9),
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Caixas Personalizadas",
+                new BigDecimal("80.00"),
+                "Embalagens",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 10),
+                LocalDate.of(2026, 11, 18),
+                null
+        );
+
+        // Filtro por tipo
+        assertEquals(2, movimentacaoFinanceiraService.listarPorTipo(TipoMovimentacaoFinanceira.RECEITA).size());
+        assertEquals(2, movimentacaoFinanceiraService.listarPorTipo(TipoMovimentacaoFinanceira.DESPESA).size());
+        assertEquals(4, movimentacaoFinanceiraService.listarPorTipo(null).size());
+
+        // Filtro por situação
+        assertEquals(2, movimentacaoFinanceiraService.listarPorSituacao(SituacaoMovimentacaoFinanceira.PAGO).size());
+        assertEquals(2, movimentacaoFinanceiraService.listarPorSituacao(SituacaoMovimentacaoFinanceira.PENDENTE).size());
+        assertEquals(0, movimentacaoFinanceiraService.listarPorSituacao(SituacaoMovimentacaoFinanceira.CANCELADO).size());
+        assertEquals(4, movimentacaoFinanceiraService.listarPorSituacao(null).size());
+
+        // Filtro por categoria (case-insensitive)
+        assertEquals(1, movimentacaoFinanceiraService.listarPorCategoria("insumos").size());
+        assertEquals(1, movimentacaoFinanceiraService.listarPorCategoria("  ENCOMENDAS ").size());
+        assertEquals(4, movimentacaoFinanceiraService.listarPorCategoria("   ").size());
+
+        // Filtro por período
+        List<MovimentacaoFinanceira> noPeriodo = movimentacaoFinanceiraService.listarPorPeriodo(
+                LocalDate.of(2026, 11, 4),
+                LocalDate.of(2026, 11, 9)
+        );
+        assertEquals(2, noPeriodo.size());
+
+        // Busca por descrição
+        assertEquals(2, movimentacaoFinanceiraService.buscarPorDescricao("terço").size());
+        assertEquals(4, movimentacaoFinanceiraService.buscarPorDescricao("   ").size());
+
+        // Consulta combinada: tipo + situacao
+        List<MovimentacaoFinanceira> receitasPagas = movimentacaoFinanceiraService.consultar(
+                TipoMovimentacaoFinanceira.RECEITA,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                null
+        );
+        assertEquals(1, receitasPagas.size());
+        assertEquals("Venda Terço São Bento", receitasPagas.get(0).getDescricao());
+
+        // Consulta combinada: tipo + situacao + categoria + período + descricao
+        List<MovimentacaoFinanceira> combinada = movimentacaoFinanceiraService.consultar(
+                TipoMovimentacaoFinanceira.DESPESA,
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                "Embalagens",
+                LocalDate.of(2026, 11, 8),
+                LocalDate.of(2026, 11, 12),
+                "Caixas"
+        );
+        assertEquals(1, combinada.size());
+        assertEquals("Compra de Caixas Personalizadas", combinada.get(0).getDescricao());
+    }
+
+    @Test
+    void deveRejeitarConsultaPorPeriodoComDatasInvalidasOuInconsistentes() {
+        assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.listarPorPeriodo(null, LocalDate.of(2026, 11, 10))
+        );
+
+        assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.listarPorPeriodo(LocalDate.of(2026, 11, 10), null)
+        );
+
+        IllegalArgumentException exOrdem = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.listarPorPeriodo(
+                        LocalDate.of(2026, 11, 15),
+                        LocalDate.of(2026, 11, 10)
+                )
+        );
+        assertEquals("Data final não pode ser anterior à data inicial.", exOrdem.getMessage());
+
+        IllegalArgumentException exConsultar = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.consultar(
+                        null,
+                        null,
+                        null,
+                        LocalDate.of(2026, 11, 20),
+                        LocalDate.of(2026, 11, 5)
+                )
+        );
+        assertEquals("Data final não pode ser anterior à data inicial.", exConsultar.getMessage());
+    }
+
     @Test
     void deveAssociarCategoriaPorIdOuEntidadeERejeitarCategoriaInexistente() {
         CategoriaDespesa insumos = categoriaDespesaService.buscarPorNomeExato("Insumos").orElseThrow();
