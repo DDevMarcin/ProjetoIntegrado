@@ -149,6 +149,29 @@ class MovimentacaoFinanceiraRepositoryTest {
                         "terço");
         assertEquals(1, porDescricao.size());
         assertEquals("Venda Terço Madeira", porDescricao.get(0).getDescricao());
+
+        List<MovimentacaoFinanceira> todasOrdenadas =
+                movimentacaoFinanceiraRepository.findAllByOrderByDataMovimentacaoDescIdMovimentacaoDesc();
+        assertEquals(3, todasOrdenadas.size());
+        assertEquals("Encomenda Rosário Especial", todasOrdenadas.get(0).getDescricao());
+        assertEquals("Compra Contas de Cristal", todasOrdenadas.get(1).getDescricao());
+        assertEquals("Venda Terço Madeira", todasOrdenadas.get(2).getDescricao());
+
+        List<MovimentacaoFinanceira> receitasPagas =
+                movimentacaoFinanceiraRepository.findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        SituacaoMovimentacaoFinanceira.PAGO
+                );
+        assertEquals(1, receitasPagas.size());
+        assertEquals("Venda Terço Madeira", receitasPagas.get(0).getDescricao());
+
+        List<MovimentacaoFinanceira> despesasInsumos =
+                movimentacaoFinanceiraRepository.findByTipoAndCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        "insumos"
+                );
+        assertEquals(1, despesasInsumos.size());
+        assertEquals("Compra Contas de Cristal", despesasInsumos.get(0).getDescricao());
     }
 
     @Test

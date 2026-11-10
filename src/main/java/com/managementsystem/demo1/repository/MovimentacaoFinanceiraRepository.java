@@ -10,11 +10,23 @@ import java.util.List;
 
 public interface MovimentacaoFinanceiraRepository extends JpaRepository<MovimentacaoFinanceira, Long> {
 
+    List<MovimentacaoFinanceira> findAllByOrderByDataMovimentacaoDescIdMovimentacaoDesc();
+
     List<MovimentacaoFinanceira> findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(TipoMovimentacaoFinanceira tipo);
 
     List<MovimentacaoFinanceira> findBySituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(SituacaoMovimentacaoFinanceira situacao);
 
     List<MovimentacaoFinanceira> findByCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(String categoria);
+
+    List<MovimentacaoFinanceira> findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            SituacaoMovimentacaoFinanceira situacao
+    );
+
+    List<MovimentacaoFinanceira> findByTipoAndCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            String categoria
+    );
 
     List<MovimentacaoFinanceira> findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(LocalDate dataInicio, LocalDate dataFim);
 
