@@ -55,10 +55,22 @@ INSERT INTO movimentacao_material (id_material, tipo, quantidade, saldo_anterior
 (2, 'PERDA', 10.00, 190.00, 180.00, 'Contas trincadas no transporte', 'Pacote 2 veio com avaria', '2026-11-04 16:40:00'),
 (9, 'SAIDA', 5.00, 5.00, 0.00, 'Uso em encomendas de noiva', 'Estoque zerado, solicitar reposição', '2026-11-08 10:20:00');
 
--- 5. Movimentações Financeiras
-INSERT INTO movimentacao_financeira (descricao, valor, tipo, categoria, situacao, data_movimentacao, data_vencimento, observacoes) VALUES
-('Compra de insumos (Madeira, Cristais e Metais)', 285.50, 'DESPESA', 'Insumos', 'PAGO', '2026-11-01', '2026-11-01', 'Pagamento à vista com desconto'),
-('Venda de 3 Terços Tradicionais São Bento', 135.00, 'RECEITA', 'Vendas Pronta Entrega', 'PAGO', '2026-11-04', '2026-11-04', 'Pagamento via PIX'),
-('Sinal 50% - Encomenda Terço Casamento Luxo', 82.50, 'RECEITA', 'Encomendas', 'PAGO', '2026-11-06', '2026-11-06', 'Cliente Mariana'),
-('Restante 50% - Encomenda Terço Casamento Luxo', 82.50, 'RECEITA', 'Encomendas', 'PENDENTE', '2026-11-06', '2026-11-18', 'Receber na entrega'),
-('Compra de embalagens e caixas aveludadas', 94.00, 'DESPESA', 'Embalagens', 'PENDENTE', '2026-11-08', '2026-11-15', 'Boleto 7 dias');
+-- 5. Categorias de Despesas
+INSERT OR IGNORE INTO categoria_despesa (id_categoria, nome, descricao) VALUES
+(1, 'Insumos', 'Compra de matérias-primas, contas, fios, entremeios e crucifixos'),
+(2, 'Embalagens', 'Caixas, saquinhos de linho, tags e materiais de envio'),
+(3, 'Frete', 'Despesas de envio pelos Correios e transportadoras'),
+(4, 'Logística', 'Custos logísticos de transporte e deslocamento'),
+(5, 'Custos Fixos', 'Energia, internet, água e despesas recorrentes do ateliê'),
+(6, 'Ferramentas e Equipamentos', 'Alicates, organizadores e utensílios de produção'),
+(7, 'Marketing e Divulgação', 'Anúncios, fotografia e materiais promocionais'),
+(8, 'Impostos e Taxas', 'DAS MEI, taxas de meios de pagamento e tarifas bancárias'),
+(9, 'Outros', 'Demais despesas gerais do ateliê');
+
+-- 6. Movimentações Financeiras
+INSERT INTO movimentacao_financeira (descricao, valor, tipo, categoria, id_categoria_despesa, situacao, data_movimentacao, data_vencimento, observacoes) VALUES
+('Compra de insumos (Madeira, Cristais e Metais)', 285.50, 'DESPESA', 'Insumos', 1, 'PAGO', '2026-11-01', '2026-11-01', 'Pagamento à vista com desconto'),
+('Venda de 3 Terços Tradicionais São Bento', 135.00, 'RECEITA', 'Vendas Pronta Entrega', NULL, 'PAGO', '2026-11-04', '2026-11-04', 'Pagamento via PIX'),
+('Sinal 50% - Encomenda Terço Casamento Luxo', 82.50, 'RECEITA', 'Encomendas', NULL, 'PAGO', '2026-11-06', '2026-11-06', 'Cliente Mariana'),
+('Restante 50% - Encomenda Terço Casamento Luxo', 82.50, 'RECEITA', 'Encomendas', NULL, 'PENDENTE', '2026-11-06', '2026-11-18', 'Receber na entrega'),
+('Compra de embalagens e caixas aveludadas', 94.00, 'DESPESA', 'Embalagens', 2, 'PENDENTE', '2026-11-08', '2026-11-15', 'Boleto 7 dias');

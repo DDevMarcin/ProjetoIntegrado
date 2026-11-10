@@ -35,11 +35,15 @@ class DespesaRestControllerTest {
     private MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository;
 
     @Autowired
+    private com.managementsystem.demo1.service.CategoriaDespesaService categoriaDespesaService;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
         movimentacaoFinanceiraRepository.deleteAll();
+        categoriaDespesaService.garantirCategoriasPadrao();
     }
 
     @Test
@@ -254,6 +258,57 @@ class DespesaRestControllerTest {
         mockMvc.perform(get("/despesas/abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erro", is("Identificador de despesa inválido.")));
+    }
+
+    @Test
+    void deveAssociarCategoriaPorIdEFiltrarDespesasPorCategoriaViaRest() throws Exception {
+        var embalagens = categoriaDespesaService.buscarPorNomeExato("Embalagens").orElseThrow();
+
+        Map<String, Object> payloadComIdCategoria = Map.of(
+                "descricao", "Compra de Saquinhos de Linho",
+                "valor", 75.00,
+                "idCategoria", embalagens.getIdCategoria(),
+                "dataMovimentacao", "2026-11-10"
+        );
+
+        mockMvc.perform(post("/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payloadComIdCategoria)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.categoria", is("Embalagens")))
+                .andExpect(jsonPath("$.categoriaDespesa.idCategoria", is(embalagens.getIdCategoria().intValue())));
+
+        mockMvc.perform(get("/despesas").param("idCategoria", embalagens.getIdCategoria().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].descricao", is("Compra de Saquinhos de Linho")));
+
+        // Tentativa de associar com categoria inexistente por nome ou por ID
+        Map<String, Object> payloadCategoriaInexistente = Map.of(
+                "descricao", "Gasto avulso",
+                "valor", 30.00,
+                "categoria", "Categoria Que Não Existe",
+                "dataMovimentacao", "2026-11-10"
+        );
+
+        mockMvc.perform(post("/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payloadCategoriaInexistente)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Categoria de despesa não encontrada: Categoria Que Não Existe")));
+
+        Map<String, Object> payloadIdInexistente = Map.of(
+                "descricao", "Gasto avulso",
+                "valor", 30.00,
+                "idCategoria", 999999L,
+                "dataMovimentacao", "2026-11-10"
+        );
+
+        mockMvc.perform(post("/despesas")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(payloadIdInexistente)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Categoria de despesa não encontrada para o ID informado: 999999")));
     }
 }
 

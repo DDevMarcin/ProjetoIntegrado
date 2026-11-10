@@ -1,6 +1,7 @@
 package com.managementsystem.demo1.service;
 
 import com.managementsystem.demo1.BackendApplication;
+import com.managementsystem.demo1.model.CategoriaDespesa;
 import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
@@ -26,11 +27,15 @@ class MovimentacaoFinanceiraServiceTest {
     private MovimentacaoFinanceiraService movimentacaoFinanceiraService;
 
     @Autowired
+    private CategoriaDespesaService categoriaDespesaService;
+
+    @Autowired
     private MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository;
 
     @BeforeEach
     void setUp() {
         movimentacaoFinanceiraRepository.deleteAll();
+        categoriaDespesaService.garantirCategoriasPadrao();
     }
 
     @Test
@@ -454,6 +459,54 @@ class MovimentacaoFinanceiraServiceTest {
         assertThrows(NoSuchElementException.class, () ->
                 movimentacaoFinanceiraService.obterDespesaPorId(idReceita)
         );
+    }
+
+    @Test
+    void deveAssociarCategoriaPorIdOuEntidadeERejeitarCategoriaInexistente() {
+        CategoriaDespesa insumos = categoriaDespesaService.buscarPorNomeExato("Insumos").orElseThrow();
+        LocalDate data = LocalDate.of(2026, 11, 10);
+
+        MovimentacaoFinanceira despesaPorId = movimentacaoFinanceiraService.cadastrarDespesaPorCategoria(
+                "Compra de Crucifixos",
+                new BigDecimal("120.00"),
+                insumos.getIdCategoria(),
+                data
+        );
+
+        assertNotNull(despesaPorId.getIdMovimentacao());
+        assertNotNull(despesaPorId.getCategoriaDespesa());
+        assertEquals(insumos.getIdCategoria(), despesaPorId.getCategoriaDespesa().getIdCategoria());
+        assertEquals("Insumos", despesaPorId.getCategoria());
+
+        List<MovimentacaoFinanceira> porCategoriaId =
+                movimentacaoFinanceiraService.listarDespesasPorCategoria(insumos.getIdCategoria());
+        assertEquals(1, porCategoriaId.size());
+
+        List<MovimentacaoFinanceira> porCategoriaNome =
+                movimentacaoFinanceiraService.listarDespesasPorCategoria("insumos");
+        assertEquals(1, porCategoriaNome.size());
+
+        // Tentativa de associar com ID de categoria inexistente
+        IllegalArgumentException exIdInexistente = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesaPorCategoria(
+                        "Despesa inválida",
+                        new BigDecimal("50.00"),
+                        999999L,
+                        data
+                )
+        );
+        assertEquals("Categoria de despesa não encontrada para o ID informado: 999999", exIdInexistente.getMessage());
+
+        // Tentativa de associar com nome de categoria inexistente
+        IllegalArgumentException exNomeInexistente = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.cadastrarDespesa(
+                        "Despesa inválida",
+                        new BigDecimal("50.00"),
+                        "Categoria Inexistente XYZ",
+                        data
+                )
+        );
+        assertEquals("Categoria de despesa não encontrada: Categoria Inexistente XYZ", exNomeInexistente.getMessage());
     }
 }
 
