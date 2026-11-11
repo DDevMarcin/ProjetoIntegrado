@@ -6,6 +6,7 @@ import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import com.managementsystem.demo1.repository.CategoriaDespesaRepository;
 import com.managementsystem.demo1.repository.MovimentacaoFinanceiraRepository;
+import com.managementsystem.demo1.repository.ResumoDespesaCategoriaProjection;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -438,6 +439,15 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarContasAReceber() {
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        SituacaoMovimentacaoFinanceira.PENDENTE
+                );
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal calcularTotalReceitas() {
         return calcularTotalReceitasPorPeriodo(null, null, null);
     }
@@ -508,6 +518,135 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public BigDecimal calcularTotalDespesasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        return calcularTotalDespesasPorPeriodo(dataInicio, dataFim, null);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularTotalDespesasPorPeriodo(
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            SituacaoMovimentacaoFinanceira situacao) {
+
+        validarPeriodo(dataInicio, dataFim);
+
+        BigDecimal total;
+
+        if (situacao != null) {
+            if (dataInicio != null && dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEPeriodo(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        situacao,
+                        dataInicio,
+                        dataFim
+                );
+            } else if (dataInicio != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEDataMovimentacaoMaiorOuIgual(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        situacao,
+                        dataInicio
+                );
+            } else if (dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEDataMovimentacaoMenorOuIgual(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        situacao,
+                        dataFim
+                );
+            } else {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacao(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        situacao
+                );
+            }
+        } else {
+            if (dataInicio != null && dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEPeriodo(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        dataInicio,
+                        dataFim
+                );
+            } else if (dataInicio != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMaiorOuIgual(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        dataInicio
+                );
+            } else if (dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMenorOuIgual(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        dataFim
+                );
+            } else {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipo(
+                        TipoMovimentacaoFinanceira.DESPESA
+                );
+            }
+        }
+
+        return normalizarValorMonetario(total);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularSaldoLiquidoPorPeriodo(
+            LocalDate dataInicio,
+            LocalDate dataFim) {
+
+        validarPeriodo(dataInicio, dataFim);
+
+        BigDecimal totalReceitas = calcularTotalReceitasPorPeriodo(
+                dataInicio,
+                dataFim,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        BigDecimal totalDespesas = calcularTotalDespesasPorPeriodo(
+                dataInicio,
+                dataFim,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        return normalizarValorMonetario(totalReceitas.subtract(totalDespesas));
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularSaldoTotal() {
+
+        BigDecimal totalReceitas = calcularTotalReceitasPorPeriodo(
+                null,
+                null,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        BigDecimal totalDespesas = calcularTotalDespesasPorPeriodo(
+                null,
+                null,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        return normalizarValorMonetario(totalReceitas.subtract(totalDespesas));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria() {
+        return movimentacaoFinanceiraRepository.resumirDespesasPorCategoria(
+                TipoMovimentacaoFinanceira.DESPESA
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria(
+            LocalDate dataInicio,
+            LocalDate dataFim
+    ) {
+        validarPeriodo(dataInicio, dataFim);
+
+        return movimentacaoFinanceiraRepository.resumirDespesasPorCategoriaEPeriodo(
+                TipoMovimentacaoFinanceira.DESPESA,
+                dataInicio,
+                dataFim
+        );
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal totalReceitas() {
         return calcularTotalReceitas();
     }
@@ -544,6 +683,22 @@ public class MovimentacaoFinanceiraService {
                     );
         }
         return listarDespesas();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarContasAReceberPorPeriodo(
+            LocalDate dataInicio,
+            LocalDate dataFim
+    ) {
+        validarPeriodo(dataInicio, dataFim);
+
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndSituacaoAndDataVencimentoBetweenOrderByDataVencimentoAscIdMovimentacaoAsc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        SituacaoMovimentacaoFinanceira.PENDENTE,
+                        dataInicio,
+                        dataFim
+                );
     }
 
     @Transactional(readOnly = true)
