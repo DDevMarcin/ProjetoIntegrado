@@ -1040,5 +1040,116 @@ class MovimentacaoFinanceiraServiceTest {
         );
         assertEquals(new BigDecimal("170.43"), totalPagoNoPeriodo);
     }
+
+    @Test
+    void deveCalcularSaldoLiquidoPorPeriodoConsiderandoSomenteMovimentacoesPagas() {
+        // Receitas
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda de produtos",
+                new BigDecimal("500.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda pendente",
+                new BigDecimal("200.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 6),
+                LocalDate.of(2026, 11, 20),
+                null
+        );
+
+        // Despesas
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de materiais",
+                new BigDecimal("150.00"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 7),
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra pendente",
+                new BigDecimal("50.00"),
+                "Embalagens",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 8),
+                LocalDate.of(2026, 11, 20),
+                null
+        );
+
+        // Período completo
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 10)
+        );
+
+        assertEquals(new BigDecimal("350.00"), saldo);
+    }
+
+    @Test
+    void deveRetornarZeroQuandoNaoExistiremMovimentacoesNoPeriodo() {
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 30)
+        );
+
+        assertEquals(new BigDecimal("0.00"), saldo);
+    }
+    @Test
+    void deveRetornarSaldoPositivoQuandoExistiremApenasReceitasPagas() {
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda de produtos",
+                new BigDecimal("300.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                null,
+                null
+        );
+
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 30)
+        );
+
+        assertEquals(new BigDecimal("300.00"), saldo);
+    }
+    @Test
+    void deveRetornarSaldoNegativoQuandoExistiremApenasDespesasPagas() {
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de insumos",
+                new BigDecimal("120.00"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                null,
+                null
+        );
+
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 30)
+        );
+
+        assertEquals(new BigDecimal("-120.00"), saldo);
+    }
+    @Test
+    void deveLancarExcecaoQuandoPeriodoDoSaldoLiquidoForInvalido() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                        LocalDate.of(2026, 11, 30),
+                        LocalDate.of(2026, 11, 1)
+                )
+        );
+    }
 }
 

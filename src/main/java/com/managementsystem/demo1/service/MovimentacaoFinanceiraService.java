@@ -576,6 +576,28 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public BigDecimal calcularSaldoLiquidoPorPeriodo(
+            LocalDate dataInicio,
+            LocalDate dataFim) {
+
+        validarPeriodo(dataInicio, dataFim);
+
+        BigDecimal totalReceitas = calcularTotalReceitasPorPeriodo(
+                dataInicio,
+                dataFim,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        BigDecimal totalDespesas = calcularTotalDespesasPorPeriodo(
+                dataInicio,
+                dataFim,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        return normalizarValorMonetario(totalReceitas.subtract(totalDespesas));
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal totalReceitas() {
         return calcularTotalReceitas();
     }
