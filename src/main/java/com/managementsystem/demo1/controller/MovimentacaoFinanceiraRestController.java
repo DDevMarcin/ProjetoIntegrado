@@ -17,6 +17,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequestMapping({"/movimentacoes-financeiras", "/financeiro/movimentacoes", "/financeiro/movimentacoes-financeiras"})
@@ -29,22 +30,99 @@ public class MovimentacaoFinanceiraRestController {
     }
 
     // GET /movimentacoes-financeiras
-    // Suporta listagem completa (receitas e despesas) ou filtros opcionais por tipo, situacao, categoria, período e descricao
+    // Suporta listagem completa (receitas e despesas) ou filtros opcionais por período (dataInicio/dataFim),
+    // tipo, situacao, idCategoria, categoria e descricao
     @GetMapping
     public ResponseEntity<?> listar(
             @RequestParam(value = "tipo", required = false) TipoMovimentacaoFinanceira tipo,
             @RequestParam(value = "situacao", required = false) SituacaoMovimentacaoFinanceira situacao,
+            @RequestParam(value = "idCategoria", required = false) Long idCategoria,
+            @RequestParam(value = "idCategoriaDespesa", required = false) Long idCategoriaDespesa,
             @RequestParam(value = "categoria", required = false) String categoria,
             @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(value = "dataInicial", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicial,
             @RequestParam(value = "dataFim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(value = "dataFinal", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFinal,
             @RequestParam(value = "descricao", required = false) String descricao
     ) {
+        return executarConsulta(
+                tipo,
+                situacao,
+                idCategoria,
+                idCategoriaDespesa,
+                categoria,
+                dataInicio,
+                dataInicial,
+                dataFim,
+                dataFinal,
+                descricao
+        );
+    }
+
+    // GET /movimentacoes-financeiras/periodo?dataInicio=AAAA-MM-DD&dataFim=AAAA-MM-DD
+    @GetMapping("/periodo")
+    public ResponseEntity<?> listarPorPeriodo(
+            @RequestParam(value = "tipo", required = false) TipoMovimentacaoFinanceira tipo,
+            @RequestParam(value = "situacao", required = false) SituacaoMovimentacaoFinanceira situacao,
+            @RequestParam(value = "idCategoria", required = false) Long idCategoria,
+            @RequestParam(value = "idCategoriaDespesa", required = false) Long idCategoriaDespesa,
+            @RequestParam(value = "categoria", required = false) String categoria,
+            @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(value = "dataInicial", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicial,
+            @RequestParam(value = "dataFim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(value = "dataFinal", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFinal,
+            @RequestParam(value = "descricao", required = false) String descricao
+    ) {
+        return executarConsulta(
+                tipo,
+                situacao,
+                idCategoria,
+                idCategoriaDespesa,
+                categoria,
+                dataInicio,
+                dataInicial,
+                dataFim,
+                dataFinal,
+                descricao
+        );
+    }
+
+    private ResponseEntity<?> executarConsulta(
+            TipoMovimentacaoFinanceira tipo,
+            SituacaoMovimentacaoFinanceira situacao,
+            Long idCategoria,
+            Long idCategoriaDespesa,
+            String categoria,
+            LocalDate dataInicio,
+            LocalDate dataInicial,
+            LocalDate dataFim,
+            LocalDate dataFinal,
+            String descricao
+    ) {
+        if (idCategoria != null && idCategoriaDespesa != null && !idCategoria.equals(idCategoriaDespesa)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Identificadores de categoria informados divergem."));
+        }
+        if (dataInicio != null && dataInicial != null && !dataInicio.equals(dataInicial)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Data inicial informada em parâmetros duplicados diverge."));
+        }
+        if (dataFim != null && dataFinal != null && !dataFim.equals(dataFinal)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Data final informada em parâmetros duplicados diverge."));
+        }
+
+        Long idCategoriaEfetivo = idCategoria != null ? idCategoria : idCategoriaDespesa;
+        LocalDate dataInicioEfetiva = dataInicio != null ? dataInicio : dataInicial;
+        LocalDate dataFimEfetiva = dataFim != null ? dataFim : dataFinal;
+
         try {
             boolean possuiFiltro = tipo != null
                     || situacao != null
+                    || idCategoriaEfetivo != null
                     || (categoria != null && !categoria.isBlank())
-                    || dataInicio != null
-                    || dataFim != null
+                    || dataInicioEfetiva != null
+                    || dataFimEfetiva != null
                     || (descricao != null && !descricao.isBlank());
 
             if (possuiFiltro) {
@@ -52,15 +130,18 @@ public class MovimentacaoFinanceiraRestController {
                         movimentacaoFinanceiraService.consultar(
                                 tipo,
                                 situacao,
+                                idCategoriaEfetivo,
                                 categoria,
-                                dataInicio,
-                                dataFim,
+                                dataInicioEfetiva,
+                                dataFimEfetiva,
                                 descricao
                         )
                 );
             }
 
             return ResponseEntity.ok(movimentacaoFinanceiraService.listarMovimentacoes());
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.notFound().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", e.getMessage()));
@@ -90,6 +171,10 @@ public class MovimentacaoFinanceiraRestController {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", "Identificador de movimentação financeira inválido."));
         }
+        if ("idCategoria".equals(parametro) || "idCategoriaDespesa".equals(parametro)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Identificador de categoria de despesa inválido."));
+        }
         if ("tipo".equals(parametro)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", "Tipo de movimentação financeira inválido. Valores aceitos: RECEITA, DESPESA."));
@@ -98,7 +183,10 @@ public class MovimentacaoFinanceiraRestController {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", "Situação de movimentação financeira inválida. Valores aceitos: PENDENTE, PAGO, CANCELADO."));
         }
-        if ("dataInicio".equals(parametro) || "dataFim".equals(parametro)) {
+        if ("dataInicio".equals(parametro)
+                || "dataFim".equals(parametro)
+                || "dataInicial".equals(parametro)
+                || "dataFinal".equals(parametro)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", "Formato de data inválido. Utilize o padrão AAAA-MM-DD."));
         }
@@ -106,4 +194,3 @@ public class MovimentacaoFinanceiraRestController {
                 .body(Map.of("erro", "Parâmetro de consulta inválido."));
     }
 }
-

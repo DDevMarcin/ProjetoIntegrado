@@ -5,6 +5,7 @@ import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import com.managementsystem.demo1.service.MovimentacaoFinanceiraService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -109,13 +110,35 @@ public class DespesaRestController {
         }
     }
 
-    // GET /despesas (suporta filtro opcional por idCategoria ou categoria)
+    public ResponseEntity<?> listar(Long idCategoria, String categoria) {
+        return listar(idCategoria, categoria, null, null);
+    }
+
+    // GET /despesas (suporta filtro opcional por idCategoria, categoria e/ou período: dataInicio e dataFim)
     @GetMapping
     public ResponseEntity<?> listar(
             @RequestParam(value = "idCategoria", required = false) Long idCategoria,
-            @RequestParam(value = "categoria", required = false) String categoria
+            @RequestParam(value = "categoria", required = false) String categoria,
+            @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(value = "dataFim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim
     ) {
         try {
+            if (dataInicio != null || dataFim != null) {
+                if (idCategoria == null && (categoria == null || categoria.isBlank())) {
+                    return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesasPorPeriodo(dataInicio, dataFim));
+                }
+                return ResponseEntity.ok(
+                        movimentacaoFinanceiraService.consultar(
+                                TipoMovimentacaoFinanceira.DESPESA,
+                                null,
+                                idCategoria,
+                                categoria,
+                                dataInicio,
+                                dataFim,
+                                null
+                        )
+                );
+            }
             if (idCategoria != null) {
                 return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesasPorCategoria(idCategoria));
             }
@@ -125,6 +148,9 @@ public class DespesaRestController {
             return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesas());
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
         }
     }
 
@@ -138,6 +164,10 @@ public class DespesaRestController {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, String>> tratarIdInvalido(MethodArgumentTypeMismatchException e) {
+        if ("dataInicio".equals(e.getName()) || "dataFim".equals(e.getName())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Formato de data inválido. Utilize o padrão AAAA-MM-DD."));
+        }
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", "Identificador de despesa inválido."));
     }
@@ -147,4 +177,4 @@ public class DespesaRestController {
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", "Formato de requisição inválido ou campos incompatíveis."));
     }
-}
+} 

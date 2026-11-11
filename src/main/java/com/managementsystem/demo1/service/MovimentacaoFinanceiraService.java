@@ -6,12 +6,16 @@ import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import com.managementsystem.demo1.repository.CategoriaDespesaRepository;
 import com.managementsystem.demo1.repository.MovimentacaoFinanceiraRepository;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -19,6 +23,11 @@ import java.util.Optional;
 
 @Service
 public class MovimentacaoFinanceiraService {
+
+    private static final Sort ORDENACAO_PADRAO = Sort.by(
+            Sort.Order.desc("dataMovimentacao"),
+            Sort.Order.desc("idMovimentacao")
+    );
 
     private final MovimentacaoFinanceiraRepository movimentacaoFinanceiraRepository;
     private final CategoriaDespesaRepository categoriaDespesaRepository;
@@ -368,15 +377,92 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
-    public List<MovimentacaoFinanceira> listarPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
-        if (dataInicio == null || dataFim == null) {
-            throw new IllegalArgumentException("Data inicial e data final são obrigatórias para consulta por período.");
+    public List<MovimentacaoFinanceira> listarPorCategoria(Long idCategoriaDespesa) {
+        if (idCategoriaDespesa == null) {
+            return listarMovimentacoes();
         }
-        if (dataFim.isBefore(dataInicio)) {
-            throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
+        if (categoriaDespesaRepository != null && !categoriaDespesaRepository.existsById(idCategoriaDespesa)) {
+            throw new NoSuchElementException("Categoria de despesa não encontrada: id " + idCategoriaDespesa);
         }
         return movimentacaoFinanceiraRepository
-                .findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio, dataFim);
+                .findByCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(idCategoriaDespesa);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        validarPeriodo(dataInicio, dataFim);
+
+        if (dataInicio != null && dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio, dataFim);
+        }
+        if (dataInicio != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio);
+        }
+        if (dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataFim);
+        }
+        return listarMovimentacoes();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarReceitasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        validarPeriodo(dataInicio, dataFim);
+
+        if (dataInicio != null && dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.RECEITA,
+                            dataInicio,
+                            dataFim
+                    );
+        }
+        if (dataInicio != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.RECEITA,
+                            dataInicio
+                    );
+        }
+        if (dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.RECEITA,
+                            dataFim
+                    );
+        }
+        return listarReceitas();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarDespesasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        validarPeriodo(dataInicio, dataFim);
+
+        if (dataInicio != null && dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.DESPESA,
+                            dataInicio,
+                            dataFim
+                    );
+        }
+        if (dataInicio != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.DESPESA,
+                            dataInicio
+                    );
+        }
+        if (dataFim != null) {
+            return movimentacaoFinanceiraRepository
+                    .findByTipoAndDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                            TipoMovimentacaoFinanceira.DESPESA,
+                            dataFim
+                    );
+        }
+        return listarDespesas();
     }
 
     @Transactional(readOnly = true)
@@ -392,7 +478,7 @@ public class MovimentacaoFinanceiraService {
     public List<MovimentacaoFinanceira> consultar(TipoMovimentacaoFinanceira tipo,
                                                   SituacaoMovimentacaoFinanceira situacao,
                                                   String categoria) {
-        return consultar(tipo, situacao, categoria, null, null, null);
+        return consultar(tipo, situacao, null, categoria, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -401,7 +487,7 @@ public class MovimentacaoFinanceiraService {
                                                   String categoria,
                                                   LocalDate dataInicio,
                                                   LocalDate dataFim) {
-        return consultar(tipo, situacao, categoria, dataInicio, dataFim, null);
+        return consultar(tipo, situacao, null, categoria, dataInicio, dataFim, null);
     }
 
     @Transactional(readOnly = true)
@@ -411,70 +497,131 @@ public class MovimentacaoFinanceiraService {
                                                   LocalDate dataInicio,
                                                   LocalDate dataFim,
                                                   String descricao) {
-        if (dataInicio != null && dataFim != null && dataFim.isBefore(dataInicio)) {
-            throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
+        return consultar(tipo, situacao, null, categoria, dataInicio, dataFim, descricao);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> consultar(TipoMovimentacaoFinanceira tipo,
+                                                  SituacaoMovimentacaoFinanceira situacao,
+                                                  Long idCategoriaDespesa,
+                                                  String categoria,
+                                                  LocalDate dataInicio,
+                                                  LocalDate dataFim,
+                                                  String descricao) {
+        validarPeriodo(dataInicio, dataFim);
+
+        if (idCategoriaDespesa != null
+                && categoriaDespesaRepository != null
+                && !categoriaDespesaRepository.existsById(idCategoriaDespesa)) {
+            throw new NoSuchElementException("Categoria de despesa não encontrada: id " + idCategoriaDespesa);
         }
 
         String categoriaFiltrada = limparCampoOpcional(categoria);
         String descricaoFiltrada = limparCampoOpcional(descricao);
 
+        boolean semCategoria = idCategoriaDespesa == null && categoriaFiltrada == null;
         boolean semPeriodo = dataInicio == null && dataFim == null;
         boolean semDescricao = descricaoFiltrada == null;
 
-        if (tipo == null && situacao == null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+        if (tipo == null && situacao == null && semCategoria && semPeriodo && semDescricao) {
             return listarMovimentacoes();
         }
 
-        if (tipo != null && situacao == null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+        if (tipo != null && situacao == null && semCategoria && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
                     .findByTipoOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo);
         }
 
-        if (tipo == null && situacao != null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+        if (tipo == null && situacao != null && semCategoria && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
                     .findBySituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(situacao);
         }
 
-        if (tipo == null && situacao == null && categoriaFiltrada != null && semPeriodo && semDescricao) {
+        if (tipo == null && situacao == null && idCategoriaDespesa == null
+                && categoriaFiltrada != null && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
                     .findByCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(categoriaFiltrada);
         }
 
-        if (tipo != null && situacao != null && categoriaFiltrada == null && semPeriodo && semDescricao) {
+        if (tipo == null && situacao == null && idCategoriaDespesa != null
+                && categoriaFiltrada == null && semPeriodo && semDescricao) {
+            return movimentacaoFinanceiraRepository
+                    .findByCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(idCategoriaDespesa);
+        }
+
+        if (tipo != null && situacao != null && semCategoria && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
                     .findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo, situacao);
         }
 
-        if (tipo != null && situacao == null && categoriaFiltrada != null && semPeriodo && semDescricao) {
+        if (tipo != null && situacao == null && idCategoriaDespesa == null
+                && categoriaFiltrada != null && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
                     .findByTipoAndCategoriaIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo, categoriaFiltrada);
         }
 
-        if (tipo == null && situacao == null && categoriaFiltrada == null
-                && dataInicio != null && dataFim != null && semDescricao) {
+        if (tipo != null && situacao == null && idCategoriaDespesa != null
+                && categoriaFiltrada == null && semPeriodo && semDescricao) {
             return movimentacaoFinanceiraRepository
-                    .findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(dataInicio, dataFim);
+                    .findByTipoAndCategoriaDespesa_IdCategoriaOrderByDataMovimentacaoDescIdMovimentacaoDesc(tipo, idCategoriaDespesa);
         }
 
-        if (tipo == null && situacao == null && categoriaFiltrada == null && semPeriodo && descricaoFiltrada != null) {
+        if (tipo == null && situacao == null && semCategoria && !semPeriodo && semDescricao) {
+            return listarPorPeriodo(dataInicio, dataFim);
+        }
+
+        if (tipo != null && situacao == null && semCategoria && !semPeriodo && semDescricao) {
+            return tipo == TipoMovimentacaoFinanceira.RECEITA
+                    ? listarReceitasPorPeriodo(dataInicio, dataFim)
+                    : listarDespesasPorPeriodo(dataInicio, dataFim);
+        }
+
+        if (tipo == null && situacao == null && semCategoria && semPeriodo && descricaoFiltrada != null) {
             return movimentacaoFinanceiraRepository
                     .findByDescricaoContainingIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(descricaoFiltrada);
         }
 
-        String descricaoLower = descricaoFiltrada != null ? descricaoFiltrada.toLowerCase(Locale.ROOT) : null;
+        Specification<MovimentacaoFinanceira> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        return listarMovimentacoes().stream()
-                .filter(m -> tipo == null || m.getTipo() == tipo)
-                .filter(m -> situacao == null || m.getSituacao() == situacao)
-                .filter(m -> categoriaFiltrada == null
-                        || (m.getCategoria() != null && m.getCategoria().trim().equalsIgnoreCase(categoriaFiltrada)))
-                .filter(m -> dataInicio == null
-                        || (m.getDataMovimentacao() != null && !m.getDataMovimentacao().isBefore(dataInicio)))
-                .filter(m -> dataFim == null
-                        || (m.getDataMovimentacao() != null && !m.getDataMovimentacao().isAfter(dataFim)))
-                .filter(m -> descricaoLower == null
-                        || (m.getDescricao() != null && m.getDescricao().toLowerCase(Locale.ROOT).contains(descricaoLower)))
-                .toList();
+            if (tipo != null) {
+                predicates.add(cb.equal(root.get("tipo"), tipo));
+            }
+            if (situacao != null) {
+                predicates.add(cb.equal(root.get("situacao"), situacao));
+            }
+            if (idCategoriaDespesa != null) {
+                predicates.add(cb.equal(root.get("categoriaDespesa").get("idCategoria"), idCategoriaDespesa));
+            }
+            if (categoriaFiltrada != null) {
+                predicates.add(cb.equal(
+                        cb.lower(cb.trim(root.get("categoria"))),
+                        categoriaFiltrada.toLowerCase(Locale.ROOT)
+                ));
+            }
+            if (dataInicio != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("dataMovimentacao"), dataInicio));
+            }
+            if (dataFim != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("dataMovimentacao"), dataFim));
+            }
+            if (descricaoFiltrada != null) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("descricao")),
+                        "%" + descricaoFiltrada.toLowerCase(Locale.ROOT) + "%"
+                ));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        return movimentacaoFinanceiraRepository.findAll(spec, ORDENACAO_PADRAO);
+    }
+
+    private void validarPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        if (dataInicio != null && dataFim != null && dataFim.isBefore(dataInicio)) {
+            throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
+        }
     }
 
     private void validarDadosMovimentacao(MovimentacaoFinanceira movimentacao,

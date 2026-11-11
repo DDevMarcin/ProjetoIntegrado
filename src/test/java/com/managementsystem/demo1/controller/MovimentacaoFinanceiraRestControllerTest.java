@@ -270,4 +270,110 @@ class MovimentacaoFinanceiraRestControllerTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].descricao", is("Venda Terço")));
     }
+
+    @Test
+    void deveFiltrarPorPeriodoCompletoEUnilateralRespeitandoLimitesInclusivos() throws Exception {
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Anterior ao Período",
+                new BigDecimal("30.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 1)
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita na Data Inicial Exata",
+                new BigDecimal("85.00"),
+                LocalDate.of(2026, 11, 5)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Dentro do Período",
+                new BigDecimal("60.00"),
+                "Embalagens",
+                LocalDate.of(2026, 11, 8)
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita na Data Final Exata",
+                new BigDecimal("140.00"),
+                LocalDate.of(2026, 11, 10)
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita Posterior ao Período",
+                new BigDecimal("200.00"),
+                LocalDate.of(2026, 11, 15)
+        );
+
+        // 1. Período completo [2026-11-05, 2026-11-10] inclui limites e exclui anterior/posterior
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataInicio", "2026-11-05")
+                        .param("dataFim", "2026-11-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].descricao", is("Receita na Data Final Exata")))
+                .andExpect(jsonPath("$[1].descricao", is("Despesa Dentro do Período")))
+                .andExpect(jsonPath("$[2].descricao", is("Receita na Data Inicial Exata")));
+
+        // 2. Somente dataInicio informada (>= 2026-11-08)
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataInicio", "2026-11-08"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].descricao", is("Receita Posterior ao Período")))
+                .andExpect(jsonPath("$[1].descricao", is("Receita na Data Final Exata")))
+                .andExpect(jsonPath("$[2].descricao", is("Despesa Dentro do Período")));
+
+        // 3. Somente dataFim informada (<= 2026-11-05)
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataFim", "2026-11-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].descricao", is("Receita na Data Inicial Exata")))
+                .andExpect(jsonPath("$[1].descricao", is("Despesa Anterior ao Período")));
+
+        // 4. Rota dedicada /movimentacoes-financeiras/periodo e aliases dataInicial/dataFinal
+        mockMvc.perform(get("/movimentacoes-financeiras/periodo")
+                        .param("dataInicial", "2026-11-05")
+                        .param("dataFinal", "2026-11-10")
+                        .param("tipo", "RECEITA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)))
+                .andExpect(jsonPath("$[0].descricao", is("Receita na Data Final Exata")))
+                .andExpect(jsonPath("$[1].descricao", is("Receita na Data Inicial Exata")));
+
+        // 5. Filtro por período nos endpoints específicos /receitas e /despesas
+        mockMvc.perform(get("/receitas")
+                        .param("dataInicio", "2026-11-05")
+                        .param("dataFim", "2026-11-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(2)));
+
+        mockMvc.perform(get("/despesas")
+                        .param("dataInicio", "2026-11-05")
+                        .param("dataFim", "2026-11-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].descricao", is("Despesa Dentro do Período")));
+    }
+
+    @Test
+    void deveRetornar400QuandoDatasEmAliasesDivergiremOuFormatoInvalidoEmDataFim() throws Exception {
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataInicio", "2026-11-01")
+                        .param("dataInicial", "2026-11-02"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Data inicial informada em parâmetros duplicados diverge.")));
+
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataFim", "2026-11-10")
+                        .param("dataFinal", "2026-11-15"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Data final informada em parâmetros duplicados diverge.")));
+
+        mockMvc.perform(get("/movimentacoes-financeiras")
+                        .param("dataFim", "31-11-2026"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Formato de data inválido")));
+    }
 }

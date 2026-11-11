@@ -4,11 +4,13 @@ import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 import java.time.LocalDate;
 import java.util.List;
 
-public interface MovimentacaoFinanceiraRepository extends JpaRepository<MovimentacaoFinanceira, Long> {
+public interface MovimentacaoFinanceiraRepository
+        extends JpaRepository<MovimentacaoFinanceira, Long>, JpaSpecificationExecutor<MovimentacaoFinanceira> {
 
     List<MovimentacaoFinanceira> findAllByOrderByDataMovimentacaoDescIdMovimentacaoDesc();
 
@@ -28,7 +30,34 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
             String categoria
     );
 
-    List<MovimentacaoFinanceira> findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(LocalDate dataInicio, LocalDate dataFim);
+    List<MovimentacaoFinanceira> findByDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            LocalDate dataInicio,
+            LocalDate dataFim
+    );
+
+    List<MovimentacaoFinanceira> findByDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            LocalDate dataInicio
+    );
+
+    List<MovimentacaoFinanceira> findByDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            LocalDate dataFim
+    );
+
+    List<MovimentacaoFinanceira> findByTipoAndDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            LocalDate dataInicio,
+            LocalDate dataFim
+    );
+
+    List<MovimentacaoFinanceira> findByTipoAndDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            LocalDate dataInicio
+    );
+
+    List<MovimentacaoFinanceira> findByTipoAndDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+            TipoMovimentacaoFinanceira tipo,
+            LocalDate dataFim
+    );
 
     List<MovimentacaoFinanceira> findByDescricaoContainingIgnoreCaseOrderByDataMovimentacaoDescIdMovimentacaoDesc(String descricao);
 
@@ -43,4 +72,3 @@ public interface MovimentacaoFinanceiraRepository extends JpaRepository<Moviment
 
     boolean existsByTipoAndCategoriaIgnoreCase(TipoMovimentacaoFinanceira tipo, String categoria);
 }
-

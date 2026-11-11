@@ -639,15 +639,91 @@ class MovimentacaoFinanceiraServiceTest {
     }
 
     @Test
+    void deveFiltrarPorPeriodoRespeitandoLimitesInclusivosEDatasUnilaterais() {
+        MovimentacaoFinanceira anterior = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra Anterior ao Período",
+                new BigDecimal("40.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 1)
+        );
+
+        MovimentacaoFinanceira limiteInicial = movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita no Limite Inicial",
+                new BigDecimal("100.00"),
+                LocalDate.of(2026, 11, 5)
+        );
+
+        MovimentacaoFinanceira intermediaria = movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Intermediária",
+                new BigDecimal("60.00"),
+                "Embalagens",
+                LocalDate.of(2026, 11, 8)
+        );
+
+        MovimentacaoFinanceira limiteFinal = movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita no Limite Final",
+                new BigDecimal("150.00"),
+                LocalDate.of(2026, 11, 10)
+        );
+
+        MovimentacaoFinanceira posterior = movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita Posterior ao Período",
+                new BigDecimal("90.00"),
+                LocalDate.of(2026, 11, 15)
+        );
+
+        // 1. Intervalo fechado [2026-11-05, 2026-11-10]: deve incluir limites e excluir anterior e posterior
+        List<MovimentacaoFinanceira> noIntervalo = movimentacaoFinanceiraService.listarPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(3, noIntervalo.size());
+        assertEquals(limiteFinal.getIdMovimentacao(), noIntervalo.get(0).getIdMovimentacao());
+        assertEquals(intermediaria.getIdMovimentacao(), noIntervalo.get(1).getIdMovimentacao());
+        assertEquals(limiteInicial.getIdMovimentacao(), noIntervalo.get(2).getIdMovimentacao());
+        assertFalse(noIntervalo.contains(anterior));
+        assertFalse(noIntervalo.contains(posterior));
+
+        // 2. Somente dataInicial informada (>= 2026-11-08)
+        List<MovimentacaoFinanceira> aPartirDe = movimentacaoFinanceiraService.listarPorPeriodo(
+                LocalDate.of(2026, 11, 8),
+                null
+        );
+        assertEquals(3, aPartirDe.size());
+        assertEquals(posterior.getIdMovimentacao(), aPartirDe.get(0).getIdMovimentacao());
+        assertEquals(limiteFinal.getIdMovimentacao(), aPartirDe.get(1).getIdMovimentacao());
+        assertEquals(intermediaria.getIdMovimentacao(), aPartirDe.get(2).getIdMovimentacao());
+
+        // 3. Somente dataFinal informada (<= 2026-11-05)
+        List<MovimentacaoFinanceira> ateData = movimentacaoFinanceiraService.listarPorPeriodo(
+                null,
+                LocalDate.of(2026, 11, 5)
+        );
+        assertEquals(2, ateData.size());
+        assertEquals(limiteInicial.getIdMovimentacao(), ateData.get(0).getIdMovimentacao());
+        assertEquals(anterior.getIdMovimentacao(), ateData.get(1).getIdMovimentacao());
+
+        // 4. Nenhuma data informada: mantém listagem completa
+        List<MovimentacaoFinanceira> todas = movimentacaoFinanceiraService.listarPorPeriodo(null, null);
+        assertEquals(5, todas.size());
+
+        // 5. Receitas e despesas por período específico
+        List<MovimentacaoFinanceira> receitasPeriodo = movimentacaoFinanceiraService.listarReceitasPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(2, receitasPeriodo.size());
+
+        List<MovimentacaoFinanceira> despesasPeriodo = movimentacaoFinanceiraService.listarDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(1, despesasPeriodo.size());
+        assertEquals(intermediaria.getIdMovimentacao(), despesasPeriodo.get(0).getIdMovimentacao());
+    }
+
+    @Test
     void deveRejeitarConsultaPorPeriodoComDatasInvalidasOuInconsistentes() {
-        assertThrows(IllegalArgumentException.class, () ->
-                movimentacaoFinanceiraService.listarPorPeriodo(null, LocalDate.of(2026, 11, 10))
-        );
-
-        assertThrows(IllegalArgumentException.class, () ->
-                movimentacaoFinanceiraService.listarPorPeriodo(LocalDate.of(2026, 11, 10), null)
-        );
-
         IllegalArgumentException exOrdem = assertThrows(IllegalArgumentException.class, () ->
                 movimentacaoFinanceiraService.listarPorPeriodo(
                         LocalDate.of(2026, 11, 15),
@@ -655,6 +731,22 @@ class MovimentacaoFinanceiraServiceTest {
                 )
         );
         assertEquals("Data final não pode ser anterior à data inicial.", exOrdem.getMessage());
+
+        IllegalArgumentException exReceitas = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.listarReceitasPorPeriodo(
+                        LocalDate.of(2026, 11, 15),
+                        LocalDate.of(2026, 11, 10)
+                )
+        );
+        assertEquals("Data final não pode ser anterior à data inicial.", exReceitas.getMessage());
+
+        IllegalArgumentException exDespesas = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.listarDespesasPorPeriodo(
+                        LocalDate.of(2026, 11, 15),
+                        LocalDate.of(2026, 11, 10)
+                )
+        );
+        assertEquals("Data final não pode ser anterior à data inicial.", exDespesas.getMessage());
 
         IllegalArgumentException exConsultar = assertThrows(IllegalArgumentException.class, () ->
                 movimentacaoFinanceiraService.consultar(
