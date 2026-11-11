@@ -1151,5 +1151,86 @@ class MovimentacaoFinanceiraServiceTest {
                 )
         );
     }
+
+    @Test
+    void deveCalcularSaldoTotalConsiderandoApenasMovimentacoesPagas() {
+        // Receita paga antiga
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita antiga",
+                new BigDecimal("500.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2020, 5, 10),
+                null,
+                null
+        );
+
+        // Receita pendente
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita pendente",
+                new BigDecimal("300.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 20),
+                null
+        );
+
+        // Receita cancelada
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita cancelada",
+                new BigDecimal("100.00"),
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.CANCELADO,
+                LocalDate.of(2026, 11, 6),
+                null,
+                null
+        );
+
+        // Despesa paga
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa antiga",
+                new BigDecimal("200.00"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2025, 3, 15),
+                null,
+                null
+        );
+
+        // Despesa pendente
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa pendente",
+                new BigDecimal("80.00"),
+                "Embalagens",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 7),
+                LocalDate.of(2026, 11, 20),
+                null
+        );
+
+        // Despesa cancelada
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa cancelada",
+                new BigDecimal("50.00"),
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.CANCELADO,
+                LocalDate.of(2026, 11, 8),
+                null,
+                null
+        );
+
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoTotal();
+
+        // 500.00 - 200.00 = 300.00
+        assertEquals(new BigDecimal("300.00"), saldo);
+    }
+
+    @Test
+    void deveRetornarZeroQuandoNaoExistiremMovimentacoesNoSaldoTotal() {
+        BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoTotal();
+
+        assertEquals(new BigDecimal("0.00"), saldo);
+    }
 }
 

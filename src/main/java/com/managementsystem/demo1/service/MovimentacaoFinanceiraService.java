@@ -598,6 +598,24 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public BigDecimal calcularSaldoTotal() {
+
+        BigDecimal totalReceitas = calcularTotalReceitasPorPeriodo(
+                null,
+                null,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        BigDecimal totalDespesas = calcularTotalDespesasPorPeriodo(
+                null,
+                null,
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+
+        return normalizarValorMonetario(totalReceitas.subtract(totalDespesas));
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal totalReceitas() {
         return calcularTotalReceitas();
     }
