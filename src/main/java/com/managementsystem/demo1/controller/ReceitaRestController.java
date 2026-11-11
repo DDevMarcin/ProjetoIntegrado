@@ -13,6 +13,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -112,6 +113,52 @@ public class ReceitaRestController {
         }
     }
 
+    // GET /receitas/total?dataInicio=AAAA-MM-DD&dataFim=AAAA-MM-DD
+    // Também responde em /receitas/total-periodo, /receitas/periodo/total, /financeiro/receitas/total e /movimentacoes-financeiras/receitas/total
+    @GetMapping({"/total", "/total-periodo", "/periodo/total"})
+    public ResponseEntity<?> calcularTotalPorPeriodo(
+            @RequestParam(value = "dataInicio", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+            @RequestParam(value = "dataInicial", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicial,
+            @RequestParam(value = "dataFim", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim,
+            @RequestParam(value = "dataFinal", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFinal,
+            @RequestParam(value = "situacao", required = false) SituacaoMovimentacaoFinanceira situacao
+    ) {
+        if (dataInicio != null && dataInicial != null && !dataInicio.equals(dataInicial)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Data inicial informada em parâmetros duplicados diverge."));
+        }
+        if (dataFim != null && dataFinal != null && !dataFim.equals(dataFinal)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Data final informada em parâmetros duplicados diverge."));
+        }
+
+        LocalDate dataInicioEfetiva = dataInicio != null ? dataInicio : dataInicial;
+        LocalDate dataFimEfetiva = dataFim != null ? dataFim : dataFinal;
+
+        try {
+            BigDecimal total = movimentacaoFinanceiraService.calcularTotalReceitasPorPeriodo(
+                    dataInicioEfetiva,
+                    dataFimEfetiva,
+                    situacao
+            );
+
+            Map<String, Object> resposta = new LinkedHashMap<>();
+            resposta.put("total", total);
+            resposta.put("totalReceitas", total);
+            resposta.put("tipo", TipoMovimentacaoFinanceira.RECEITA);
+            resposta.put("dataInicio", dataInicioEfetiva);
+            resposta.put("dataFim", dataFimEfetiva);
+            if (situacao != null) {
+                resposta.put("situacao", situacao);
+            }
+
+            return ResponseEntity.ok(resposta);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
+        }
+    }
+
     // GET /receitas/{id}
     @GetMapping("/{id}")
     public ResponseEntity<?> buscarPorId(@PathVariable("id") Long id) {
@@ -122,9 +169,17 @@ public class ReceitaRestController {
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, String>> tratarIdInvalido(MethodArgumentTypeMismatchException e) {
-        if ("dataInicio".equals(e.getName()) || "dataFim".equals(e.getName())) {
+        String parametro = e.getName();
+        if ("dataInicio".equals(parametro)
+                || "dataFim".equals(parametro)
+                || "dataInicial".equals(parametro)
+                || "dataFinal".equals(parametro)) {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", "Formato de data inválido. Utilize o padrão AAAA-MM-DD."));
+        }
+        if ("situacao".equals(parametro)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Situação de movimentação financeira inválida. Valores aceitos: PENDENTE, PAGO, CANCELADO."));
         }
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", "Identificador de receita inválido."));
@@ -136,4 +191,3 @@ public class ReceitaRestController {
                 .body(Map.of("erro", "Formato de requisição inválido ou campos incompatíveis."));
     }
 }
-

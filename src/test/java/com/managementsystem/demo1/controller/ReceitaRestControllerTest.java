@@ -237,5 +237,111 @@ class ReceitaRestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erro", is("Identificador de receita inválido.")));
     }
+
+    @Test
+    void deveCalcularTotalDeReceitasPorPeriodoViaGetExcluindoDespesasERespeitandoLimites() throws Exception {
+        // Período sem receitas -> retorna total 0.0
+        mockMvc.perform(get("/receitas/total")
+                        .param("dataInicio", "2026-11-01")
+                        .param("dataFim", "2026-11-30"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(0.0)))
+                .andExpect(jsonPath("$.totalReceitas", is(0.0)))
+                .andExpect(jsonPath("$.tipo", is("RECEITA")));
+
+        movimentacaoFinanceiraRepository.save(new MovimentacaoFinanceira(
+                "Receita Anterior",
+                new BigDecimal("50.00"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 1),
+                null,
+                null
+        ));
+
+        movimentacaoFinanceiraRepository.save(new MovimentacaoFinanceira(
+                "Receita Limite Inicial",
+                new BigDecimal("110.25"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                null,
+                null
+        ));
+
+        movimentacaoFinanceiraRepository.save(new MovimentacaoFinanceira(
+                "Despesa no Mesmo Período",
+                new BigDecimal("400.00"),
+                TipoMovimentacaoFinanceira.DESPESA,
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 7),
+                null,
+                null
+        ));
+
+        movimentacaoFinanceiraRepository.save(new MovimentacaoFinanceira(
+                "Receita Limite Final",
+                new BigDecimal("89.75"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Encomendas",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 10),
+                null,
+                null
+        ));
+
+        movimentacaoFinanceiraRepository.save(new MovimentacaoFinanceira(
+                "Receita Posterior",
+                new BigDecimal("70.00"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 20),
+                null,
+                null
+        ));
+
+        // Intervalo fechado [2026-11-05, 2026-11-10]: 110.25 + 89.75 = 200.00
+        mockMvc.perform(get("/receitas/total")
+                        .param("dataInicio", "2026-11-05")
+                        .param("dataFim", "2026-11-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(200.0)))
+                .andExpect(jsonPath("$.totalReceitas", is(200.0)))
+                .andExpect(jsonPath("$.dataInicio", is("2026-11-05")))
+                .andExpect(jsonPath("$.dataFim", is("2026-11-10")));
+
+        // Somente dataInicio (>= 2026-11-05): 110.25 + 89.75 + 70.00 = 270.00
+        mockMvc.perform(get("/financeiro/receitas/total")
+                        .param("dataInicio", "2026-11-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(270.0)));
+
+        // Somente dataFim (<= 2026-11-05): 50.00 + 110.25 = 160.25
+        mockMvc.perform(get("/movimentacoes-financeiras/receitas/total")
+                        .param("dataFim", "2026-11-05"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(160.25)));
+
+        // Sem parâmetros de período: todas as receitas = 50.00 + 110.25 + 89.75 + 70.00 = 320.00
+        mockMvc.perform(get("/receitas/total"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(320.0)));
+
+        // Período inválido (dataFim < dataInicio) e formato inválido
+        mockMvc.perform(get("/receitas/total")
+                        .param("dataInicio", "2026-11-15")
+                        .param("dataFim", "2026-11-05"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", is("Data final não pode ser anterior à data inicial.")));
+
+        mockMvc.perform(get("/receitas/total")
+                        .param("dataInicio", "data-invalida"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.erro", containsString("Formato de data inválido")));
+    }
 }
 

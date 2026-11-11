@@ -300,5 +300,113 @@ class MovimentacaoFinanceiraRepositoryTest {
         assertEquals(SituacaoMovimentacaoFinanceira.PAGO, m2.getSituacao());
         assertTrue(m1.toString().contains("MovimentacaoFinanceira{"));
     }
+
+    @Test
+    void deveSomarValoresDeReceitasPorPeriodoNoBancoIgnorandoDespesasERetornandoZeroQuandoVazio() {
+        // Sem registros no banco: deve retornar 0
+        BigDecimal totalVazio = movimentacaoFinanceiraRepository.somarValorPorTipo(TipoMovimentacaoFinanceira.RECEITA);
+        assertEquals(0, BigDecimal.ZERO.compareTo(totalVazio));
+
+        BigDecimal totalPeriodoVazio = movimentacaoFinanceiraRepository.somarValorPorTipoEPeriodo(
+                TipoMovimentacaoFinanceira.RECEITA,
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 30)
+        );
+        assertEquals(0, BigDecimal.ZERO.compareTo(totalPeriodoVazio));
+
+        MovimentacaoFinanceira recForaAntes = new MovimentacaoFinanceira(
+                "Receita Anterior",
+                new BigDecimal("40.25"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 1),
+                null,
+                null
+        );
+        MovimentacaoFinanceira recLimiteInicio = new MovimentacaoFinanceira(
+                "Receita no Limite Inicial",
+                new BigDecimal("100.15"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                null,
+                null
+        );
+        MovimentacaoFinanceira despesaNoPeriodo = new MovimentacaoFinanceira(
+                "Despesa no Período",
+                new BigDecimal("500.00"),
+                TipoMovimentacaoFinanceira.DESPESA,
+                "Insumos",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 7),
+                null,
+                null
+        );
+        MovimentacaoFinanceira recLimiteFim = new MovimentacaoFinanceira(
+                "Receita no Limite Final",
+                new BigDecimal("59.85"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Encomendas",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 10),
+                null,
+                null
+        );
+        MovimentacaoFinanceira recForaDepois = new MovimentacaoFinanceira(
+                "Receita Posterior",
+                new BigDecimal("80.00"),
+                TipoMovimentacaoFinanceira.RECEITA,
+                "Vendas",
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 15),
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraRepository.saveAll(List.of(
+                recForaAntes,
+                recLimiteInicio,
+                despesaNoPeriodo,
+                recLimiteFim,
+                recForaDepois
+        ));
+
+        // Total no período [2026-11-05, 2026-11-10]: 100.15 + 59.85 = 160.00 (exclui despesa de 500.00)
+        BigDecimal totalPeriodo = movimentacaoFinanceiraRepository.somarValorPorTipoEPeriodo(
+                TipoMovimentacaoFinanceira.RECEITA,
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(0, new BigDecimal("160.00").compareTo(totalPeriodo));
+
+        // Total >= 2026-11-05: 100.15 + 59.85 + 80.00 = 240.00
+        BigDecimal totalAPartirDe = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMaiorOuIgual(
+                TipoMovimentacaoFinanceira.RECEITA,
+                LocalDate.of(2026, 11, 5)
+        );
+        assertEquals(0, new BigDecimal("240.00").compareTo(totalAPartirDe));
+
+        // Total <= 2026-11-05: 40.25 + 100.15 = 140.40
+        BigDecimal totalAte = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMenorOuIgual(
+                TipoMovimentacaoFinanceira.RECEITA,
+                LocalDate.of(2026, 11, 5)
+        );
+        assertEquals(0, new BigDecimal("140.40").compareTo(totalAte));
+
+        // Total geral de receitas: 40.25 + 100.15 + 59.85 + 80.00 = 280.25
+        BigDecimal totalGeral = movimentacaoFinanceiraRepository.somarValorPorTipo(TipoMovimentacaoFinanceira.RECEITA);
+        assertEquals(0, new BigDecimal("280.25").compareTo(totalGeral));
+
+        // Total de receitas PAGO no período [2026-11-05, 2026-11-10]: 100.15
+        BigDecimal totalPagoPeriodo = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEPeriodo(
+                TipoMovimentacaoFinanceira.RECEITA,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(0, new BigDecimal("100.15").compareTo(totalPagoPeriodo));
+    }
 }
 
