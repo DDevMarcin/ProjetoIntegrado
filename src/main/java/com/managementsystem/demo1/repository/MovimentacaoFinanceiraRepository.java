@@ -137,4 +137,27 @@ public interface MovimentacaoFinanceiraRepository
     List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria(
             @Param("tipo") TipoMovimentacaoFinanceira tipo
     );
+
+    @Query("""
+    SELECT
+        m.categoria AS categoria,
+        SUM(m.valor) AS total
+    FROM MovimentacaoFinanceira m
+    WHERE m.tipo = :tipo
+      AND m.dataMovimentacao BETWEEN :dataInicio AND :dataFim
+    GROUP BY m.categoria
+    ORDER BY m.categoria
+""")
+    List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoriaEPeriodo(
+            @Param("tipo") TipoMovimentacaoFinanceira tipo,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim
+    );
+
+    List<MovimentacaoFinanceira> findByTipoAndSituacaoAndDataVencimentoBetweenOrderByDataVencimentoAscIdMovimentacaoAsc(
+            TipoMovimentacaoFinanceira tipo,
+            SituacaoMovimentacaoFinanceira situacao,
+            LocalDate dataInicio,
+            LocalDate dataFim
+    );
 }

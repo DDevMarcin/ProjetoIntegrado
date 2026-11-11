@@ -633,6 +633,20 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria(
+            LocalDate dataInicio,
+            LocalDate dataFim
+    ) {
+        validarPeriodo(dataInicio, dataFim);
+
+        return movimentacaoFinanceiraRepository.resumirDespesasPorCategoriaEPeriodo(
+                TipoMovimentacaoFinanceira.DESPESA,
+                dataInicio,
+                dataFim
+        );
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal totalReceitas() {
         return calcularTotalReceitas();
     }
@@ -669,6 +683,22 @@ public class MovimentacaoFinanceiraService {
                     );
         }
         return listarDespesas();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarContasAReceberPorPeriodo(
+            LocalDate dataInicio,
+            LocalDate dataFim
+    ) {
+        validarPeriodo(dataInicio, dataFim);
+
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndSituacaoAndDataVencimentoBetweenOrderByDataVencimentoAscIdMovimentacaoAsc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        SituacaoMovimentacaoFinanceira.PENDENTE,
+                        dataInicio,
+                        dataFim
+                );
     }
 
     @Transactional(readOnly = true)

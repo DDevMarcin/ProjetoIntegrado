@@ -15,8 +15,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -1316,6 +1318,49 @@ class MovimentacaoFinanceiraServiceTest {
         assertEquals(0, new BigDecimal("500.00").compareTo(resultado.get(0).getValor()));
         assertEquals(SituacaoMovimentacaoFinanceira.PENDENTE, resultado.get(0).getSituacao());
         assertEquals(TipoMovimentacaoFinanceira.RECEITA, resultado.get(0).getTipo());
+    }
+
+    @Test
+    void deveResumirDespesasPorCategoriaDentroDoPeriodo() {
+        LocalDate dataInicio = LocalDate.of(2026, 10, 1);
+        LocalDate dataFim = LocalDate.of(2026, 10, 31);
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de materiais",
+                new BigDecimal("200.00"),
+                "Insumos",
+                LocalDate.of(2026, 10, 10)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de embalagens",
+                new BigDecimal("100.00"),
+                "Embalagens",
+                LocalDate.of(2026, 10, 20)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra fora do período",
+                new BigDecimal("500.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 5)
+        );
+
+        List<ResumoDespesaCategoriaProjection> resultado =
+                movimentacaoFinanceiraService.resumirDespesasPorCategoria(
+                        dataInicio, dataFim
+                );
+
+        assertEquals(2, resultado.size());
+
+        Map<String, BigDecimal> totais = resultado.stream()
+                .collect(Collectors.toMap(
+                        ResumoDespesaCategoriaProjection::getCategoria,
+                        ResumoDespesaCategoriaProjection::getTotal
+                ));
+
+        assertEquals(0, new BigDecimal("200.00").compareTo(totais.get("Insumos")));
+        assertEquals(0, new BigDecimal("100.00").compareTo(totais.get("Embalagens")));
     }
 }
 
