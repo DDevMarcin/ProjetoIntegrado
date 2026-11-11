@@ -1276,5 +1276,46 @@ class MovimentacaoFinanceiraServiceTest {
         assertNotNull(resultado);
         assertTrue(resultado.isEmpty());
     }
+
+    @Test
+    void deveListarApenasReceitasPendentesComoContasAReceber() {
+        LocalDate data = LocalDate.of(2026, 11, 10);
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda pendente",
+                new BigDecimal("500.00"),
+                null,
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                data,
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda paga",
+                new BigDecimal("300.00"),
+                null,
+                SituacaoMovimentacaoFinanceira.PAGO,
+                data,
+                null,
+                null
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de materiais",
+                new BigDecimal("200.00"),
+                "Insumos",
+                data
+        );
+
+        List<MovimentacaoFinanceira> resultado =
+                movimentacaoFinanceiraService.listarContasAReceber();
+
+        assertEquals(1, resultado.size());
+        assertEquals("Venda pendente", resultado.get(0).getDescricao());
+        assertEquals(0, new BigDecimal("500.00").compareTo(resultado.get(0).getValor()));
+        assertEquals(SituacaoMovimentacaoFinanceira.PENDENTE, resultado.get(0).getSituacao());
+        assertEquals(TipoMovimentacaoFinanceira.RECEITA, resultado.get(0).getTipo());
+    }
 }
 

@@ -439,6 +439,15 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public List<MovimentacaoFinanceira> listarContasAReceber() {
+        return movimentacaoFinanceiraRepository
+                .findByTipoAndSituacaoOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        SituacaoMovimentacaoFinanceira.PENDENTE
+                );
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal calcularTotalReceitas() {
         return calcularTotalReceitasPorPeriodo(null, null, null);
     }
