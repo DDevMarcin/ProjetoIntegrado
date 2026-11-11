@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -437,6 +438,86 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public BigDecimal calcularTotalReceitas() {
+        return calcularTotalReceitasPorPeriodo(null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularTotalReceitasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        return calcularTotalReceitasPorPeriodo(dataInicio, dataFim, null);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal calcularTotalReceitasPorPeriodo(LocalDate dataInicio,
+                                                      LocalDate dataFim,
+                                                      SituacaoMovimentacaoFinanceira situacao) {
+        validarPeriodo(dataInicio, dataFim);
+
+        BigDecimal total;
+        if (situacao != null) {
+            if (dataInicio != null && dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEPeriodo(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        situacao,
+                        dataInicio,
+                        dataFim
+                );
+            } else if (dataInicio != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEDataMovimentacaoMaiorOuIgual(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        situacao,
+                        dataInicio
+                );
+            } else if (dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacaoEDataMovimentacaoMenorOuIgual(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        situacao,
+                        dataFim
+                );
+            } else {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoESituacao(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        situacao
+                );
+            }
+        } else {
+            if (dataInicio != null && dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEPeriodo(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        dataInicio,
+                        dataFim
+                );
+            } else if (dataInicio != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMaiorOuIgual(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        dataInicio
+                );
+            } else if (dataFim != null) {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipoEDataMovimentacaoMenorOuIgual(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        dataFim
+                );
+            } else {
+                total = movimentacaoFinanceiraRepository.somarValorPorTipo(
+                        TipoMovimentacaoFinanceira.RECEITA
+                );
+            }
+        }
+
+        return normalizarValorMonetario(total);
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal totalReceitas() {
+        return calcularTotalReceitas();
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal totalReceitasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
+        return calcularTotalReceitasPorPeriodo(dataInicio, dataFim);
+    }
+
+    @Transactional(readOnly = true)
     public List<MovimentacaoFinanceira> listarDespesasPorPeriodo(LocalDate dataInicio, LocalDate dataFim) {
         validarPeriodo(dataInicio, dataFim);
 
@@ -622,6 +703,13 @@ public class MovimentacaoFinanceiraService {
         if (dataInicio != null && dataFim != null && dataFim.isBefore(dataInicio)) {
             throw new IllegalArgumentException("Data final não pode ser anterior à data inicial.");
         }
+    }
+
+    private BigDecimal normalizarValorMonetario(BigDecimal valor) {
+        if (valor == null || valor.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+        }
+        return valor.setScale(2, RoundingMode.HALF_UP);
     }
 
     private void validarDadosMovimentacao(MovimentacaoFinanceira movimentacao,

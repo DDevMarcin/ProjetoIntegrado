@@ -376,4 +376,38 @@ class MovimentacaoFinanceiraRestControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.erro", containsString("Formato de data inválido")));
     }
+
+    @Test
+    void deveCalcularTotalDeReceitasPorPeriodoNoControllerFinanceiro() throws Exception {
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Terço Pérolas",
+                new BigDecimal("145.60"),
+                LocalDate.of(2026, 11, 5)
+        );
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda Dezena Cristal",
+                new BigDecimal("54.40"),
+                LocalDate.of(2026, 11, 8)
+        );
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de Fios",
+                new BigDecimal("90.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 6)
+        );
+
+        mockMvc.perform(get("/movimentacoes-financeiras/total-receitas")
+                        .param("dataInicio", "2026-11-05")
+                        .param("dataFim", "2026-11-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(200.0)))
+                .andExpect(jsonPath("$.totalReceitas", is(200.0)))
+                .andExpect(jsonPath("$.tipo", is("RECEITA")));
+
+        mockMvc.perform(get("/financeiro/movimentacoes/total-receitas")
+                        .param("dataInicial", "2026-11-01")
+                        .param("dataFinal", "2026-11-04"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total", is(0.0)));
+    }
 }
