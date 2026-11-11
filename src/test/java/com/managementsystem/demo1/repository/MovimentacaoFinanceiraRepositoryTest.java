@@ -172,6 +172,31 @@ class MovimentacaoFinanceiraRepositoryTest {
                 );
         assertEquals(1, despesasInsumos.size());
         assertEquals("Compra Contas de Cristal", despesasInsumos.get(0).getDescricao());
+
+        List<MovimentacaoFinanceira> aPartirDeCinco =
+                movimentacaoFinanceiraRepository.findByDataMovimentacaoGreaterThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        LocalDate.of(2026, 11, 5)
+                );
+        assertEquals(2, aPartirDeCinco.size());
+        assertEquals("Encomenda Rosário Especial", aPartirDeCinco.get(0).getDescricao());
+        assertEquals("Compra Contas de Cristal", aPartirDeCinco.get(1).getDescricao());
+
+        List<MovimentacaoFinanceira> ateCinco =
+                movimentacaoFinanceiraRepository.findByDataMovimentacaoLessThanEqualOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        LocalDate.of(2026, 11, 5)
+                );
+        assertEquals(2, ateCinco.size());
+        assertEquals("Compra Contas de Cristal", ateCinco.get(0).getDescricao());
+        assertEquals("Venda Terço Madeira", ateCinco.get(1).getDescricao());
+
+        List<MovimentacaoFinanceira> receitasNoPeriodo =
+                movimentacaoFinanceiraRepository.findByTipoAndDataMovimentacaoBetweenOrderByDataMovimentacaoDescIdMovimentacaoDesc(
+                        TipoMovimentacaoFinanceira.RECEITA,
+                        LocalDate.of(2026, 11, 1),
+                        LocalDate.of(2026, 11, 6)
+                );
+        assertEquals(1, receitasNoPeriodo.size());
+        assertEquals("Venda Terço Madeira", receitasNoPeriodo.get(0).getDescricao());
     }
 
     @Test
