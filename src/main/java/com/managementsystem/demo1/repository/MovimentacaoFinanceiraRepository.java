@@ -124,4 +124,17 @@ public interface MovimentacaoFinanceiraRepository
             @Param("situacao") SituacaoMovimentacaoFinanceira situacao,
             @Param("dataFim") LocalDate dataFim
     );
+
+    @Query("""
+        SELECT
+            m.categoria AS categoria,
+            SUM(m.valor) AS total
+        FROM MovimentacaoFinanceira m
+        WHERE m.tipo = :tipo
+        GROUP BY m.categoria
+        ORDER BY m.categoria
+    """)
+    List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria(
+            @Param("tipo") TipoMovimentacaoFinanceira tipo
+    );
 }

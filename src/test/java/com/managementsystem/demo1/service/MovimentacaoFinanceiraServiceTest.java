@@ -6,6 +6,7 @@ import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import com.managementsystem.demo1.repository.MovimentacaoFinanceiraRepository;
+import com.managementsystem.demo1.repository.ResumoDespesaCategoriaProjection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -1231,6 +1232,49 @@ class MovimentacaoFinanceiraServiceTest {
         BigDecimal saldo = movimentacaoFinanceiraService.calcularSaldoTotal();
 
         assertEquals(new BigDecimal("0.00"), saldo);
+    }
+    @Test
+    void deveAgruparDespesasPorCategoriaSomandoOsValores() {
+        LocalDate data = LocalDate.of(2026, 11, 10);
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de fios", new BigDecimal("300.00"), "Insumos", data);
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de materiais", new BigDecimal("200.00"), "Insumos", data);
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Compra de caixas", new BigDecimal("150.00"), "Embalagens", data);
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Venda de produtos", new BigDecimal("500.00"), data);
+
+        List<ResumoDespesaCategoriaProjection> resultado =
+                movimentacaoFinanceiraService.resumirDespesasPorCategoria();
+
+        assertEquals(2, resultado.size());
+
+        ResumoDespesaCategoriaProjection insumos = resultado.stream()
+                .filter(r -> r.getCategoria().equals("Insumos"))
+                .findFirst()
+                .orElseThrow();
+
+        ResumoDespesaCategoriaProjection embalagens = resultado.stream()
+                .filter(r -> r.getCategoria().equals("Embalagens"))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(0, new BigDecimal("500.00").compareTo(insumos.getTotal()));
+        assertEquals(0, new BigDecimal("150.00").compareTo(embalagens.getTotal()));
+    }
+
+    @Test
+    void deveRetornarListaVaziaQuandoNaoExistiremDespesas() {
+        List<ResumoDespesaCategoriaProjection> resultado =
+                movimentacaoFinanceiraService.resumirDespesasPorCategoria();
+
+        assertNotNull(resultado);
+        assertTrue(resultado.isEmpty());
     }
 }
 

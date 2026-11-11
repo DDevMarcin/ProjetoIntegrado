@@ -6,6 +6,7 @@ import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
 import com.managementsystem.demo1.repository.CategoriaDespesaRepository;
 import com.managementsystem.demo1.repository.MovimentacaoFinanceiraRepository;
+import com.managementsystem.demo1.repository.ResumoDespesaCategoriaProjection;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -613,6 +614,13 @@ public class MovimentacaoFinanceiraService {
         );
 
         return normalizarValorMonetario(totalReceitas.subtract(totalDespesas));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria() {
+        return movimentacaoFinanceiraRepository.resumirDespesasPorCategoria(
+                TipoMovimentacaoFinanceira.DESPESA
+        );
     }
 
     @Transactional(readOnly = true)
