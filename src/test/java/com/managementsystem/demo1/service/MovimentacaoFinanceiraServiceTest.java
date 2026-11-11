@@ -766,6 +766,14 @@ class MovimentacaoFinanceiraServiceTest {
                 )
         );
         assertEquals("Data final não pode ser anterior à data inicial.", exTotalReceitas.getMessage());
+
+        IllegalArgumentException exTotalDespesas = assertThrows(IllegalArgumentException.class, () ->
+                movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                        LocalDate.of(2026, 11, 20),
+                        LocalDate.of(2026, 11, 5)
+                )
+        );
+        assertEquals("Data final não pode ser anterior à data inicial.", exTotalDespesas.getMessage());
     }
 
     @Test
@@ -922,6 +930,115 @@ class MovimentacaoFinanceiraServiceTest {
                 )
         );
         assertEquals("Categoria de despesa não encontrada: Categoria Inexistente XYZ", exNomeInexistente.getMessage());
+    }
+    @Test
+    void deveCalcularTotalDeDespesasPorPeriodoComPrecisaoDecimalExcluindoReceitasERespeitandoLimites() {
+
+        // 1. Sem despesas cadastradas, retorna 0.00
+        BigDecimal totalInicialVazio = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 1),
+                LocalDate.of(2026, 11, 30)
+        );
+        assertEquals(new BigDecimal("0.00"), totalInicialVazio);
+
+        // 2. Despesas antes, nos limites, dentro e depois do período
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Fora Antes",
+                new BigDecimal("35.90"),
+                "Insumos",
+                LocalDate.of(2026, 11, 2)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa no Limite Inicial",
+                new BigDecimal("125.33"),
+                "Insumos",
+                LocalDate.of(2026, 11, 5)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Intermediária",
+                new BigDecimal("89.67"),
+                "Embalagens",
+                SituacaoMovimentacaoFinanceira.PENDENTE,
+                LocalDate.of(2026, 11, 7),
+                LocalDate.of(2026, 11, 20),
+                "Pagamento pendente"
+        );
+
+        // Receitas que não devem entrar no cálculo
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita no Período 1",
+                new BigDecimal("300.00"),
+                LocalDate.of(2026, 11, 6)
+        );
+
+        movimentacaoFinanceiraService.cadastrarReceita(
+                "Receita no Período 2",
+                new BigDecimal("140.50"),
+                LocalDate.of(2026, 11, 10)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa no Limite Final",
+                new BigDecimal("45.10"),
+                "Embalagens",
+                LocalDate.of(2026, 11, 10)
+        );
+
+        movimentacaoFinanceiraService.cadastrarDespesa(
+                "Despesa Fora Depois",
+                new BigDecimal("210.00"),
+                "Insumos",
+                LocalDate.of(2026, 11, 18)
+        );
+
+        // 3. Período fechado: 125.33 + 89.67 + 45.10 = 260.10
+        BigDecimal totalNoPeriodo = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10)
+        );
+        assertEquals(new BigDecimal("260.10"), totalNoPeriodo);
+
+        // 4. Apenas um dia: 125.33
+        BigDecimal totalDiaUnico = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 5)
+        );
+        assertEquals(new BigDecimal("125.33"), totalDiaUnico);
+
+        // 5. Somente data inicial: 89.67 + 45.10 + 210.00 = 344.77
+        BigDecimal totalAPartirDe = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 7),
+                null
+        );
+        assertEquals(new BigDecimal("344.77"), totalAPartirDe);
+
+        // 6. Somente data final: 35.90 + 125.33 = 161.23
+        BigDecimal totalAte = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                null,
+                LocalDate.of(2026, 11, 5)
+        );
+        assertEquals(new BigDecimal("161.23"), totalAte);
+
+        // 7. Nenhuma data: soma todas as despesas = 506.00
+        BigDecimal totalGeral = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(null, null);
+        assertEquals(new BigDecimal("506.00"), totalGeral);
+
+        // 8. Período contendo somente receita: retorna 0.00
+        BigDecimal totalApenasReceita = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 6),
+                LocalDate.of(2026, 11, 6)
+        );
+        assertEquals(new BigDecimal("0.00"), totalApenasReceita);
+
+        // 9. Somente despesas PAGO no período: 125.33 + 45.10 = 170.43
+        BigDecimal totalPagoNoPeriodo = movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                LocalDate.of(2026, 11, 5),
+                LocalDate.of(2026, 11, 10),
+                SituacaoMovimentacaoFinanceira.PAGO
+        );
+        assertEquals(new BigDecimal("170.43"), totalPagoNoPeriodo);
     }
 }
 
