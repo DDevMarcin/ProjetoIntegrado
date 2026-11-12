@@ -185,6 +185,58 @@ public class ReceitaRestController {
                 .body(Map.of("erro", "Identificador de receita inválido."));
     }
 
+    @GetMapping("/resumo")
+    public ResponseEntity<?> consultarResumoReceitas(
+            @RequestParam("dataInicio")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataInicio,
+
+            @RequestParam("dataFim")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataFim
+    ) {
+        try {
+            BigDecimal ganhosTotais =
+                    movimentacaoFinanceiraService.calcularTotalReceitasPorPeriodo(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PAGO
+                    );
+
+            BigDecimal aReceber =
+                    movimentacaoFinanceiraService.calcularTotalReceitasPorPeriodo(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PENDENTE
+                    );
+
+            List<MovimentacaoFinanceira> ultimosRecebimentos =
+                    movimentacaoFinanceiraService.consultar(
+                                    TipoMovimentacaoFinanceira.RECEITA,
+                                    SituacaoMovimentacaoFinanceira.PAGO,
+                                    null,
+                                    null,
+                                    dataInicio,
+                                    dataFim,
+                                    null
+                            ).stream()
+                            .limit(5)
+                            .toList();
+
+            Map<String, Object> resposta = new LinkedHashMap<>();
+
+            resposta.put("ganhosTotais", ganhosTotais);
+            resposta.put("aReceber", aReceber);
+            resposta.put("ultimosRecebimentos", ultimosRecebimentos);
+
+            return ResponseEntity.ok(resposta);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
+        }
+    }
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, String>> tratarJsonInvalido(HttpMessageNotReadableException e) {
         return ResponseEntity.badRequest()

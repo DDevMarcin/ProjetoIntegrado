@@ -211,6 +211,56 @@ public class MovimentacaoFinanceiraRestController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/fluxo-de-caixa")
+    public ResponseEntity<?> consultarFluxoDeCaixa(
+            @RequestParam("dataInicio")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataInicio,
+
+            @RequestParam("dataFim")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataFim
+    ) {
+        try {
+            BigDecimal entradas =
+                    movimentacaoFinanceiraService.calcularTotalReceitasPorPeriodo(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PAGO
+                    );
+
+            BigDecimal saidas =
+                    movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PAGO
+                    );
+
+            BigDecimal saldoTotal =
+                    movimentacaoFinanceiraService.calcularSaldoTotal();
+
+            BigDecimal saldoLiquido =
+                    movimentacaoFinanceiraService.calcularSaldoLiquidoPorPeriodo(
+                            dataInicio,
+                            dataFim
+                    );
+
+            Map<String, Object> resposta = new LinkedHashMap<>();
+            resposta.put("saldoTotal", saldoTotal);
+            resposta.put("entradas", entradas);
+            resposta.put("saidas", saidas);
+            resposta.put("receitasPeriodo", entradas);
+            resposta.put("despesasPeriodo", saidas);
+            resposta.put("saldoLiquido", saldoLiquido);
+
+            return ResponseEntity.ok(resposta);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
+        }
+    }
+
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, String>> tratarParametroInvalido(MethodArgumentTypeMismatchException e) {
         String parametro = e.getName();
@@ -239,5 +289,37 @@ public class MovimentacaoFinanceiraRestController {
         }
         return ResponseEntity.badRequest()
                 .body(Map.of("erro", "Parâmetro de consulta inválido."));
+    }
+
+    // GET /movimentacoes-financeiras/contas-a-receber
+    @GetMapping("/contas-a-receber")
+    public ResponseEntity<?> listarContasAReceber(
+            @RequestParam(value = "dataInicio", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataInicio,
+
+            @RequestParam(value = "dataFim", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dataFim
+    ) {
+        if ((dataInicio == null) != (dataFim == null)) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", "Informe as datas inicial e final para consultar por período."));
+        }
+
+        try {
+            List<MovimentacaoFinanceira> contas;
+
+            if (dataInicio != null) {
+                contas = movimentacaoFinanceiraService
+                        .listarContasAReceberPorPeriodo(dataInicio, dataFim);
+            } else {
+                contas = movimentacaoFinanceiraService.listarContasAReceber();
+            }
+
+            return ResponseEntity.ok(contas);
+
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
+        }
     }
 }

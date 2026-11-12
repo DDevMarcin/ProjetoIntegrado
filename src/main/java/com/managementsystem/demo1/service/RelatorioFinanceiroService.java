@@ -47,7 +47,9 @@ public class RelatorioFinanceiroService {
 
         List<ResumoDespesaCategoriaProjection> despesasPorCategoria =
                 movimentacaoFinanceiraService.resumirDespesasPorCategoria(
-                        dataInicio, dataFim
+                        dataInicio,
+                        dataFim,
+                        SituacaoMovimentacaoFinanceira.PAGO
                 );
 
         NumberFormat formatoMoeda = NumberFormat.getCurrencyInstance(

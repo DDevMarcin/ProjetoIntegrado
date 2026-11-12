@@ -1,0 +1,42 @@
+HTTP/1.1 200 
+Content-Disposition: attachment; filename="relatorio-financeiro.pdf"
+Content-Type: application/pdf
+Content-Length: 1106
+Date: Thu, 12 Nov 2026 00:23:41 GMT
+
+%PDF-1.5
+%âãÏÓ
+2 0 obj
+<</Filter/FlateDecode/Length 361>>stream
+xœ…’ÁRÂ0†ï}Š=xÀÁ$…´p+%08#…¶zÏĞèÔ)„:¾ïæÁñÀÉ0t°xè¤Ùıvÿ“¬aê¸|D!Ímì›Ÿë1L }pZ±(xõ¥r	ã¼äåRäJ^¦OšEJZs¡¶2“ ˆĞ6Æm„WŸ¿[Œ­e`Æ,¹»`<³MãÈJ¥²âd”Ğ¾*¾@|ñ†®:gbó,6ÿá	/2	Åvı’›±Î¡ö!F,™³$H`Å)›Dñ4¨¡'ŞŞ3Œf©î@ÌB6d±­K…³Ş}nt|â N^ÍMSâ¡Xo5«„“R¤ïéµ™]˜‚ÁH`p} ®ÖZûy%¥Ê¹±¢¥xÒï›¦’İEğ>{ìu;®[7Š‘	Ì»~·C=[¾>JÏók¾Fb³TùÇ»´Œ‚É^¶^sÏ©š¼ëÓ½/Êe¾eõ#òtÆÑ™
+endstream
+endobj
+4 0 obj
+<</Contents 2 0 R/Type/Page/Resources<</Font<</F1 1 0 R>>>>/Parent 3 0 R/MediaBox[0 0 595 842]>>
+endobj
+1 0 obj
+<</Subtype/Type1/Type/Font/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>
+endobj
+3 0 obj
+<</Kids[4 0 R]/Type/Pages/Count 1>>
+endobj
+5 0 obj
+<</Type/Catalog/Pages 3 0 R>>
+endobj
+6 0 obj
+<</CreationDate(D:20261111212341-03'00')/Producer(OpenPDF 2.0.5)>>
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000555 00000 n 
+0000000015 00000 n 
+0000000643 00000 n 
+0000000443 00000 n 
+0000000694 00000 n 
+0000000739 00000 n 
+trailer
+<</Info 6 0 R/ID [<ec36a0c1dea1f8d5208fd55fca80c081><ec36a0c1dea1f8d5208fd55fca80c081>]/Root 5 0 R/Size 7>>
+startxref
+821
+%%EOF

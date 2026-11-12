@@ -4,6 +4,7 @@ import com.managementsystem.demo1.model.CategoriaDespesa;
 import com.managementsystem.demo1.model.MovimentacaoFinanceira;
 import com.managementsystem.demo1.model.SituacaoMovimentacaoFinanceira;
 import com.managementsystem.demo1.model.TipoMovimentacaoFinanceira;
+import com.managementsystem.demo1.repository.ResumoDespesaCategoriaProjection;
 import com.managementsystem.demo1.service.MovimentacaoFinanceiraService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,7 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
@@ -148,6 +150,66 @@ public class DespesaRestController {
             return ResponseEntity.ok(movimentacaoFinanceiraService.listarDespesas());
         } catch (NoSuchElementException e) {
             return ResponseEntity.notFound().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("erro", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/resumo")
+    public ResponseEntity<?> consultarResumoDespesas(
+            @RequestParam("dataInicio")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataInicio,
+
+            @RequestParam("dataFim")
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate dataFim
+    ) {
+        try {
+            BigDecimal despesasTotais =
+                    movimentacaoFinanceiraService.calcularTotalDespesasPorPeriodo(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PAGO
+                    );
+
+            List<MovimentacaoFinanceira> ultimasDespesas =
+                    movimentacaoFinanceiraService.consultar(
+                                    TipoMovimentacaoFinanceira.DESPESA,
+                                    SituacaoMovimentacaoFinanceira.PAGO,
+                                    null,
+                                    null,
+                                    dataInicio,
+                                    dataFim,
+                                    null
+                            ).stream()
+                            .limit(5)
+                            .toList();
+
+            List<ResumoDespesaCategoriaProjection> despesasPorCategoria =
+                    movimentacaoFinanceiraService.resumirDespesasPorCategoria(
+                            dataInicio,
+                            dataFim,
+                            SituacaoMovimentacaoFinanceira.PAGO
+                    );
+
+            BigDecimal despesasMateriais = despesasPorCategoria.stream()
+                    .filter(item -> "Materiais".equalsIgnoreCase(item.getCategoria()))
+                    .map(ResumoDespesaCategoriaProjection::getTotal)
+                    .filter(java.util.Objects::nonNull)
+                    .findFirst()
+                    .orElse(BigDecimal.ZERO);
+
+            Map<String, Object> resposta = new java.util.LinkedHashMap<>();
+
+            resposta.put("despesasTotais", despesasTotais);
+            resposta.put("despesasMateriais", despesasMateriais);
+            resposta.put("ultimasDespesas", ultimasDespesas);
+            resposta.put("despesasPorCategoria", despesasPorCategoria);
+
+            return ResponseEntity.ok(resposta);
+
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("erro", e.getMessage()));
