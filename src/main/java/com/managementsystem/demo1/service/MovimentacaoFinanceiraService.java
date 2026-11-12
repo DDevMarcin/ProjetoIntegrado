@@ -647,6 +647,23 @@ public class MovimentacaoFinanceiraService {
     }
 
     @Transactional(readOnly = true)
+    public List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoria(
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            SituacaoMovimentacaoFinanceira situacao
+    ) {
+        validarPeriodo(dataInicio, dataFim);
+
+        return movimentacaoFinanceiraRepository
+                .resumirDespesasPorCategoriaEPeriodoESituacao(
+                        TipoMovimentacaoFinanceira.DESPESA,
+                        situacao,
+                        dataInicio,
+                        dataFim
+                );
+    }
+
+    @Transactional(readOnly = true)
     public BigDecimal totalReceitas() {
         return calcularTotalReceitas();
     }

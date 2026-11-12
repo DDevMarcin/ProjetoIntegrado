@@ -160,4 +160,22 @@ public interface MovimentacaoFinanceiraRepository
             LocalDate dataInicio,
             LocalDate dataFim
     );
+
+    @Query("""
+        SELECT
+            COALESCE(m.categoriaDespesa.nome, m.categoria) AS categoria,
+            SUM(m.valor) AS total
+        FROM MovimentacaoFinanceira m
+        WHERE m.tipo = :tipo
+          AND m.situacao = :situacao
+          AND m.dataMovimentacao BETWEEN :dataInicio AND :dataFim
+        GROUP BY COALESCE(m.categoriaDespesa.nome, m.categoria)
+        ORDER BY COALESCE(m.categoriaDespesa.nome, m.categoria)
+    """)
+    List<ResumoDespesaCategoriaProjection> resumirDespesasPorCategoriaEPeriodoESituacao(
+            @Param("tipo") TipoMovimentacaoFinanceira tipo,
+            @Param("situacao") SituacaoMovimentacaoFinanceira situacao,
+            @Param("dataInicio") LocalDate dataInicio,
+            @Param("dataFim") LocalDate dataFim
+    );
 }

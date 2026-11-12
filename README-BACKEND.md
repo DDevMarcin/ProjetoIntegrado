@@ -826,4 +826,676 @@ Resposta:
 }
 ```
 
+## 24. Movimentações financeiras
+
+A API de movimentações financeiras permite consultar receitas e despesas cadastradas, aplicar filtros e obter o total de receitas em determinado período.
+
+**URL base:** `http://localhost:8080`
+
+### 24.1. Listar movimentações financeiras
+
+**Endpoint:** `GET /movimentacoes-financeiras`
+
+Retorna todas as movimentações financeiras cadastradas quando nenhum filtro é informado. Também permite filtrar os resultados.
+
+**Parâmetros opcionais:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `tipo` | String | Tipo da movimentação: `RECEITA` ou `DESPESA`. |
+| `situacao` | String | Situação: `PENDENTE`, `PAGO` ou `CANCELADO`. |
+| `idCategoria` | Long | Identificador da categoria. |
+| `idCategoriaDespesa` | Long | Alias para `idCategoria`. |
+| `categoria` | String | Nome da categoria. |
+| `dataInicio` | LocalDate | Data inicial do período (`AAAA-MM-DD`). |
+| `dataInicial` | LocalDate | Alias para `dataInicio`. |
+| `dataFim` | LocalDate | Data final do período (`AAAA-MM-DD`). |
+| `dataFinal` | LocalDate | Alias para `dataFim`. |
+| `descricao` | String | Texto para filtrar pela descrição. |
+
+**Exemplos de requisição:**
+
+Listar todas as movimentações:
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras
+```
+
+Listar somente receitas:
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras?tipo=RECEITA
+```
+
+Listar despesas pagas:
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras?tipo=DESPESA&situacao=PAGO
+```
+
+Consultar movimentações em um período:
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras?dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+Combinar filtros:
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras?tipo=DESPESA&situacao=PENDENTE&dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de objetos `MovimentacaoFinanceira`, contendo os dados das movimentações encontradas.
+
+### 24.2. Listar movimentações por período
+
+**Endpoint:** `GET /movimentacoes-financeiras/periodo`
+
+Possui os mesmos filtros do endpoint de listagem, permitindo consultar movimentações por período e combinar os filtros de tipo, situação, categoria e descrição.
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras/periodo?dataInicio=2026-10-01&dataFim=2026-10-31&tipo=DESPESA
+```
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de movimentações que atendem aos filtros informados.
+
+### 24.3. Buscar movimentações por descrição
+
+**Endpoint:** `GET /movimentacoes-financeiras/buscar`
+
+Busca movimentações utilizando parte ou o conteúdo da descrição.
+
+**Parâmetro:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `descricao` | String | Texto utilizado na busca. |
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras/buscar?descricao=Compra
+```
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de movimentações encontradas.
+
+### 24.4. Consultar movimentação por ID
+
+**Endpoint:** `GET /movimentacoes-financeiras/{id}`
+
+Busca uma movimentação financeira específica pelo identificador.
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras/1
+```
+
+**Respostas:**
+
+- `200 OK`: movimentação encontrada.
+- `404 Not Found`: não existe movimentação com o identificador informado.
+- `400 Bad Request`: identificador inválido.
+
+### 24.5. Consultar total de receitas
+
+**Endpoints:**
+
+- `GET /movimentacoes-financeiras/total-receitas`
+- `GET /movimentacoes-financeiras/receitas-total` (alias).
+
+Calcula o total de receitas, permitindo informar um período e uma situação.
+
+**Parâmetros opcionais:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `dataInicio` | LocalDate | Data inicial (`AAAA-MM-DD`). |
+| `dataInicial` | LocalDate | Alias para `dataInicio`. |
+| `dataFim` | LocalDate | Data final (`AAAA-MM-DD`). |
+| `dataFinal` | LocalDate | Alias para `dataFim`. |
+| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/movimentacoes-financeiras/total-receitas?dataInicio=2026-10-01&dataFim=2026-10-31&situacao=PAGO
+```
+
+**Resposta:** `200 OK`
+
+```json
+{
+  "total": 1500.00,
+  "totalReceitas": 1500.00,
+  "tipo": "RECEITA",
+  "dataInicio": "2026-10-01",
+  "dataFim": "2026-10-31",
+  "situacao": "PAGO"
+}
+```
+
+Os campos `situacao`, `dataInicio` e `dataFim` refletem os filtros informados. Quando a situação não é enviada, o campo `situacao` não é incluído na resposta. As datas podem ser nulas quando não forem informadas.
+
+### 24.6. Códigos de erro
+
+| Código HTTP | Situação |
+|---|---|
+| `200 OK` | Consulta realizada com sucesso. |
+| `400 Bad Request` | Parâmetros inválidos, datas em formato incorreto ou filtros duplicados com valores divergentes. |
+| `404 Not Found` | Movimentação não encontrada pelo ID. |
+
+Os erros de validação retornam um objeto JSON com o campo `erro`.
+
+Exemplo:
+
+```json
+{
+  "erro": "Tipo de movimentação financeira inválido. Valores aceitos: RECEITA, DESPESA."
+}
+```
+
+**Observação:** os valores dos parâmetros `tipo` e `situacao` devem respeitar os nomes dos enums, em letras maiúsculas. As datas devem utilizar o formato `AAAA-MM-DD`.
+### 24.7. Gerar relatório financeiro em PDF
+
+**Endpoint:** `GET /relatorios/financeiros`
+
+Gera um relatório financeiro em formato PDF, considerando o período informado.
+
+**Parâmetros obrigatórios:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `dataInicio` | LocalDate | Data inicial do relatório (`AAAA-MM-DD`). |
+| `dataFim` | LocalDate | Data final do relatório (`AAAA-MM-DD`). |
+
+**Exemplo de requisição:**
+
+```http
+GET http://localhost:8080/relatorios/financeiros?dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+**Exemplo utilizando cURL:**
+
+```bash
+curl -X GET \
+"http://localhost:8080/relatorios/financeiros?dataInicio=2026-10-01&dataFim=2026-10-31" \
+-H "Accept: application/pdf" \
+--output relatorio-financeiro.pdf
+```
+
+**Resposta de sucesso:** `200 OK`
+
+Retorna o arquivo PDF diretamente no corpo da resposta.
+
+**Cabeçalhos da resposta:**
+
+| Cabeçalho | Valor |
+|---|---|
+| `Content-Type` | `application/pdf` |
+| `Content-Disposition` | `attachment; filename="relatorio-financeiro.pdf"` |
+
+O relatório contém:
+
+- Período selecionado.
+- Total de receitas.
+- Total de despesas.
+- Saldo líquido.
+- Resumo de despesas por categoria.
+- Contas a receber.
+
+**Resposta de erro:** `400 Bad Request`
+
+Quando os parâmetros informados não são válidos, retorna um JSON:
+
+```json
+{
+  "erro": "Mensagem explicando o problema."
+}
+```
+
+**Integração com o frontend:**
+
+O frontend deve realizar uma requisição GET, receber a resposta como arquivo binário (Blob) e disponibilizar o PDF para visualização ou download.
+
+Exemplo com JavaScript:
+
+```javascript
+async function baixarRelatorio(dataInicio, dataFim) {
+    const params = new URLSearchParams({
+        dataInicio,
+        dataFim
+    });
+
+    const response = await fetch(
+        `http://localhost:8080/relatorios/financeiros?${params}`,
+        {
+            headers: {
+                Accept: "application/pdf"
+            }
+        }
+    );
+
+    if (!response.ok) {
+        const erro = await response.json();
+        throw new Error(erro.erro || "Erro ao gerar relatório.");
+    }
+
+    const arquivo = await response.blob();
+    const url = URL.createObjectURL(arquivo);
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "relatorio-financeiro.pdf";
+    link.click();
+
+    URL.revokeObjectURL(url);
+}
+
+
+```
+## 25. Receitas
+
+A API de receitas permite cadastrar receitas, consultar os registros existentes, filtrar por período e calcular o total recebido ou previsto.
+
+### 25.1. Cadastrar receita
+
+**Endpoint:** `POST /receitas`
+
+Também aceita os caminhos alternativos:
+
+- `/financeiro/receitas`
+- `/movimentacoes-financeiras/receitas`
+
+**Corpo da requisição:**
+
+```json
+{
+  "descricao": "Venda de produtos",
+  "valor": 1500.00,
+  "categoria": "Vendas",
+  "situacao": "PENDENTE",
+  "dataMovimentacao": "2026-10-10",
+  "dataRecebimento": "2026-10-10",
+  "dataVencimento": "2026-10-20",
+  "observacoes": "Venda realizada para cliente",
+  "tipo": "RECEITA"
+}
+```
+
+**Descrição dos campos:**
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `descricao` | String | Descrição da receita. |
+| `valor` | BigDecimal | Valor da receita. |
+| `categoria` | String | Categoria da receita. |
+| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
+| `dataMovimentacao` | LocalDate | Data da movimentação. |
+| `dataRecebimento` | LocalDate | Alternativa para informar a data da movimentação. |
+| `dataVencimento` | LocalDate | Data de vencimento da receita. |
+| `observacoes` | String | Observações adicionais. |
+| `tipo` | String | Tipo da movimentação. Quando informado, deve ser `RECEITA`. |
+
+As datas devem utilizar o formato `AAAA-MM-DD`.
+
+**Regras importantes:**
+
+- Os campos `dataMovimentacao` e `dataRecebimento` podem ser utilizados como alternativas.
+- Se ambos forem informados, devem possuir a mesma data.
+- O tipo da movimentação é definido pelo serviço como receita quando não informado.
+- Os demais campos e suas validações devem respeitar as regras do serviço.
+
+**Resposta de sucesso:** `201 Created`
+
+Retorna o objeto da receita cadastrada.
+
+**Resposta de erro:** `400 Bad Request`
+
+Retorna um JSON com o campo `erro` explicando o problema.
+
+### 25.2. Listar receitas
+
+**Endpoint:** `GET /receitas`
+
+Retorna todas as receitas cadastradas.
+
+Também permite filtrar por período.
+
+**Parâmetros opcionais:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `dataInicio` | LocalDate | Data inicial do período (`AAAA-MM-DD`). |
+| `dataFim` | LocalDate | Data final do período (`AAAA-MM-DD`). |
+
+**Exemplos:**
+
+Listar todas as receitas:
+
+```http
+GET http://localhost:8080/receitas
+```
+
+Listar receitas de outubro:
+
+```http
+GET http://localhost:8080/receitas?dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de objetos de movimentação financeira correspondentes às receitas.
+
+### 25.3. Consultar total de receitas
+
+**Endpoints:**
+
+- `GET /receitas/total`
+- `GET /receitas/total-periodo`
+- `GET /receitas/periodo/total`
+
+Também existem os caminhos alternativos:
+
+- `/financeiro/receitas/total`
+- `/movimentacoes-financeiras/receitas/total`
+
+Calcula o total das receitas, permitindo filtros por período e situação.
+
+**Parâmetros opcionais:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `dataInicio` | LocalDate | Data inicial (`AAAA-MM-DD`). |
+| `dataInicial` | LocalDate | Alias para `dataInicio`. |
+| `dataFim` | LocalDate | Data final (`AAAA-MM-DD`). |
+| `dataFinal` | LocalDate | Alias para `dataFim`. |
+| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/receitas/total?dataInicio=2026-10-01&dataFim=2026-10-31&situacao=PAGO
+```
+
+**Resposta:** `200 OK`
+
+```json
+{
+  "total": 1500.00,
+  "totalReceitas": 1500.00,
+  "tipo": "RECEITA",
+  "dataInicio": "2026-10-01",
+  "dataFim": "2026-10-31",
+  "situacao": "PAGO"
+}
+```
+
+O campo `situacao` só aparece quando informado. As datas podem ser nulas quando não forem fornecidas.
+
+### 25.4. Consultar receita por ID
+
+**Endpoint:** `GET /receitas/{id}`
+
+Consulta uma receita específica pelo identificador.
+
+**Exemplo:**
+
+```http
+GET http://localhost:8080/receitas/1
+```
+
+**Respostas:**
+
+- `200 OK`: receita encontrada.
+- `404 Not Found`: receita não encontrada.
+- `400 Bad Request`: identificador inválido.
+
+### 25.5. Códigos de erro
+
+| Código HTTP | Situação |
+|---|---|
+| `201 Created` | Receita cadastrada com sucesso. |
+| `200 OK` | Consulta realizada com sucesso. |
+| `400 Bad Request` | Dados inválidos, datas incompatíveis ou parâmetros incorretos. |
+| `404 Not Found` | Receita não encontrada pelo ID. |
+
+Os erros são retornados em JSON:
+
+```json
+{
+  "erro": "Mensagem explicando o problema."
+}
+```
+
+**Observação:** o controller apresentado não disponibiliza operações de atualização ou exclusão de receitas.
+
+## 26. Despesas
+
+A API de despesas permite cadastrar despesas, consultar registros, filtrar por categoria e período e consultar uma despesa específica.
+
+### 26.1. Cadastrar despesa
+
+**Endpoint:** `POST /despesas`
+
+Caminhos alternativos:
+
+- `/financeiro/despesas`
+- `/movimentacoes-financeiras/despesas`
+
+**Corpo da requisição:**
+
+```json
+{
+  "descricao": "Compra de matéria-prima",
+  "valor": 350.00,
+  "categoria": "Insumos",
+  "idCategoria": 1,
+  "situacao": "PENDENTE",
+  "dataMovimentacao": "2026-10-10",
+  "dataPagamento": "2026-10-10",
+  "dataVencimento": "2026-10-20",
+  "observacoes": "Compra para produção",
+  "tipo": "DESPESA"
+}
+```
+
+**Descrição dos campos:**
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `descricao` | String | Descrição da despesa. |
+| `valor` | BigDecimal | Valor da despesa. |
+| `categoria` | String | Nome da categoria da despesa. |
+| `idCategoria` | Long | Identificador da categoria cadastrada. |
+| `idCategoriaDespesa` | Long | Alias para `idCategoria`. |
+| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
+| `dataMovimentacao` | LocalDate | Data da movimentação. |
+| `dataPagamento` | LocalDate | Alternativa para informar a data da movimentação. |
+| `dataVencimento` | LocalDate | Data de vencimento da despesa. |
+| `observacoes` | String | Observações adicionais. |
+| `tipo` | String | Tipo da movimentação. Quando informado, deve ser `DESPESA`. |
+
+As datas devem utilizar o formato `AAAA-MM-DD`.
+
+**Regras importantes:**
+
+- `dataMovimentacao` e `dataPagamento` podem ser utilizados como alternativas.
+- Caso ambos sejam informados, devem possuir a mesma data.
+- `idCategoria` e `idCategoriaDespesa` também são alternativas. Se ambos forem enviados, devem possuir o mesmo valor.
+- Quando um ID de categoria é informado, o backend associa a despesa à categoria correspondente.
+- O tipo da movimentação é definido pelo serviço como despesa quando não informado.
+- Os demais campos e suas validações devem respeitar as regras do serviço.
+
+**Resposta de sucesso:** `201 Created`
+
+Retorna o objeto da despesa cadastrada.
+
+**Resposta de erro:** `400 Bad Request`
+
+Retorna um JSON com o campo `erro`.
+
+### 26.2. Listar despesas
+
+**Endpoint:** `GET /despesas`
+
+Permite consultar todas as despesas ou aplicar filtros por categoria e período.
+
+**Parâmetros opcionais:**
+
+| Parâmetro | Tipo | Descrição |
+|---|---|---|
+| `idCategoria` | Long | Identificador da categoria. |
+| `categoria` | String | Nome da categoria. |
+| `dataInicio` | LocalDate | Data inicial (`AAAA-MM-DD`). |
+| `dataFim` | LocalDate | Data final (`AAAA-MM-DD`). |
+
+**Exemplos:**
+
+Listar todas as despesas:
+
+```http
+GET http://localhost:8080/despesas
+```
+
+Filtrar por categoria:
+
+```http
+GET http://localhost:8080/despesas?idCategoria=1
+```
+
+Filtrar pelo nome da categoria:
+
+```http
+GET http://localhost:8080/despesas?categoria=Insumos
+```
+
+Consultar despesas de um período:
+
+```http
+GET http://localhost:8080/despesas?dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+Combinar categoria e período:
+
+```http
+GET http://localhost:8080/despesas?idCategoria=1&dataInicio=2026-10-01&dataFim=2026-10-31
+```
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de objetos de movimentação financeira correspondentes às despesas encontradas.
+
+**Possíveis
+
+## 27. Categorias de despesas
+
+O sistema disponibiliza endpoints para gerenciar as categorias utilizadas na organização das despesas financeiras.
+
+**Rotas alternativas:** todos os endpoints também podem ser acessados pelos prefixos:
+
+- `/categorias-despesas`
+- `/financeiro/categorias-despesas`
+- `/despesas/categorias`
+
+Para manter a padronização, recomenda-se utilizar `/categorias-despesas` no frontend.
+
+### 27.1. Cadastrar categoria de despesa
+
+**Endpoint:** `POST /categorias-despesas`
+
+**Corpo da requisição:**
+
+```json
+{
+  "nome": "Insumos",
+  "descricao": "Despesas relacionadas à aquisição de matérias-primas."
+}
+```
+
+**Resposta:** `201 Created`
+
+Retorna a categoria cadastrada.
+
+**Possíveis erros:**
+- `400 Bad Request`: dados não informados ou categoria inválida. O corpo da resposta contém a propriedade `erro`.
+
+### 27.2. Listar categorias
+
+**Endpoint:** `GET /categorias-despesas`
+
+Retorna todas as categorias cadastradas.
+
+Também é possível filtrar pelo nome:
+
+`GET /categorias-despesas?nome=Insumos`
+
+O filtro é opcional. Quando informado e não estiver em branco, o backend utiliza a busca por nome.
+
+**Resposta:** `200 OK`
+
+Retorna uma lista de categorias.
+
+### 27.3. Buscar categoria por ID
+
+**Endpoint:** `GET /categorias-despesas/{id}`
+
+Exemplo:
+
+`GET /categorias-despesas/1`
+
+**Respostas:**
+- `200 OK`: categoria encontrada.
+- `404 Not Found`: categoria não encontrada.
+- `400 Bad Request`: identificador inválido.
+
+### 27.4. Atualizar categoria
+
+**Endpoint:** `PUT /categorias-despesas/{id}`
+
+**Corpo da requisição:**
+
+```json
+{
+  "nome": "Insumos e Matérias-primas",
+  "descricao": "Despesas relacionadas à produção."
+}
+```
+
+**Respostas:**
+- `200 OK`: categoria atualizada.
+- `404 Not Found`: categoria não encontrada.
+- `400 Bad Request`: dados inválidos ou incompatíveis com as regras do backend.
+
+### 27.5. Excluir categoria
+
+**Endpoint:** `DELETE /categorias-despesas/{id}`
+
+Exemplo:
+
+`DELETE /categorias-despesas/1`
+
+**Respostas:**
+- `204 No Content`: categoria excluída com sucesso.
+- `404 Not Found`: categoria não encontrada.
+- `400 Bad Request`: exclusão não permitida pelas regras do sistema ou identificador inválido.
+
+### 27.6. Estrutura dos dados
+
+O DTO utilizado para cadastro e atualização possui os seguintes campos:
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `nome` | String | Nome da categoria |
+| `descricao` | String | Descrição da categoria |
+
+**Observação para o frontend:** as categorias cadastradas podem ser consultadas pelo endpoint `GET /categorias-despesas` e utilizadas para preencher os campos de seleção durante o cadastro de despesas. O identificador da categoria pode ser enviado no campo `idCategoria` ou `idCategoriaDespesa` do cadastro de uma despesa, conforme documentado na seção 26.
 Retorna a soma das quantidades em estoque de todos os produtos sob controle de estoque.
