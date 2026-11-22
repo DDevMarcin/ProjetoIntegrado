@@ -463,6 +463,10 @@ public class MovimentacaoFinanceiraService {
                                                       SituacaoMovimentacaoFinanceira situacao) {
         validarPeriodo(dataInicio, dataFim);
 
+        if (situacao == null) {
+            situacao = SituacaoMovimentacaoFinanceira.PAGO;
+        }
+
         BigDecimal total;
         if (situacao != null) {
             if (dataInicio != null && dataFim != null) {

@@ -964,6 +964,10 @@ Calcula o total de receitas, permitindo informar um período e uma situação.
 | `dataFinal` | LocalDate | Alias para `dataFim`. |
 | `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
 
+**Comportamento padrão da situação:** quando o parâmetro `situacao` não é informado, o total considera apenas as receitas com situação `PAGO`. Receitas `PENDENTE` e `CANCELADO` só entram na soma se forem solicitadas explicitamente, por exemplo com `situacao=PENDENTE`.
+
+Para consultar o valor a receber, use `situacao=PENDENTE`.
+
 **Exemplo:**
 
 ```http
@@ -1218,7 +1222,9 @@ Calcula o total das receitas, permitindo filtros por período e situação.
 | `dataInicial` | LocalDate | Alias para `dataInicio`. |
 | `dataFim` | LocalDate | Data final (`AAAA-MM-DD`). |
 | `dataFinal` | LocalDate | Alias para `dataFim`. |
-| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. |
+| `situacao` | String | `PENDENTE`, `PAGO` ou `CANCELADO`. Padrão: `PAGO`. |
+
+**Comportamento padrão da situação:** quando o parâmetro `situacao` não é informado, o total considera apenas as receitas com situação `PAGO`. Para somar receitas pendentes ou canceladas, informe a situação desejada.
 
 **Exemplo:**
 
