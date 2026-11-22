@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -22,6 +23,11 @@ public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
     private final MaterialRepository materialRepository;
+    public static final BigDecimal MARGEM_LUCRO = new BigDecimal("1.20");
+
+    public BigDecimal aplicarMargemLucro(BigDecimal valor) {
+        return valor.multiply(MARGEM_LUCRO).setScale(2, RoundingMode.HALF_UP);
+    }
 
     public ProdutoService(ProdutoRepository produtoRepository, MaterialRepository materialRepository) {
         this.produtoRepository = produtoRepository;
@@ -114,7 +120,8 @@ public class ProdutoService {
             }
         }
 
-        produto.setValor(calcularManualmente ? valorManual : valorCalculado);
+        BigDecimal base = calcularManualmente ? valorManual : valorCalculado;
+        produto.setValor(tipo == TipoProduto.PERSONALIZADO ? aplicarMargemLucro(base) : base);
         produto.setMateriaisUtilizados(vinculos);
 
         return produtoRepository.save(produto);

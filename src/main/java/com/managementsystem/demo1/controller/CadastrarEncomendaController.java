@@ -109,7 +109,7 @@ public class CadastrarEncomendaController {
         if (rbPrecoManual.isSelected()) {
             try {
                 BigDecimal v = new BigDecimal(campoValorManual.getText().replace(",", "."));
-                previewValor.setText("R$ " + String.format("%.2f", v));
+                previewValor.setText("R$ " + String.format("%.2f", produtoService.aplicarMargemLucro(v)));
             } catch (NumberFormatException e) {
                 previewValor.setText("R$ —");
             }
@@ -117,7 +117,9 @@ public class CadastrarEncomendaController {
             BigDecimal soma = BigDecimal.ZERO;
             for (int i = 0; i < materiaisSelecionados.size(); i++)
                 soma = soma.add(materiaisSelecionados.get(i).getPrecoUnidade().multiply(quantidades.get(i)));
-            previewValor.setText(soma.compareTo(BigDecimal.ZERO) == 0 ? "R$ —" : "R$ " + String.format("%.2f", soma));
+            previewValor.setText(soma.compareTo(BigDecimal.ZERO) == 0
+                    ? "R$ —"
+                    : "R$ " + String.format("%.2f", produtoService.aplicarMargemLucro(soma)));
         }
     }
 
