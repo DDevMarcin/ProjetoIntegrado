@@ -67,3 +67,36 @@ CREATE TABLE IF NOT EXISTS movimentacao_financeira (
     FOREIGN KEY (id_categoria_despesa) REFERENCES categoria_despesa(id_categoria)
 );
 
+CREATE TABLE IF NOT EXISTS encomenda (
+    id_encomenda            INTEGER PRIMARY KEY AUTOINCREMENT,
+    nome_cliente            VARCHAR(255)    NOT NULL,
+    contato_cliente         VARCHAR(50),
+    data_pedido             DATE            NOT NULL,
+    data_entrega_prevista   DATE,
+    situacao                VARCHAR(20)     NOT NULL DEFAULT 'PENDENTE' CHECK (situacao IN ('PENDENTE', 'EM_PRODUCAO', 'PRONTA', 'ENTREGUE', 'CANCELADA')),
+    observacoes             VARCHAR(500),
+    subtotal                NUMERIC(12,2)   NOT NULL DEFAULT 0,
+    valor_total             NUMERIC(12,2)   NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS item_encomenda (
+    id_item                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_encomenda            BIGINT          NOT NULL,
+    nome                    VARCHAR(255)    NOT NULL,
+    descricao               VARCHAR(255),
+    prazo_producao_dias     INTEGER,
+    observacoes             VARCHAR(500),
+    valor_manual            BOOLEAN         NOT NULL DEFAULT 0,
+    valor                   NUMERIC(12,2)   NOT NULL DEFAULT 0,
+    FOREIGN KEY (id_encomenda) REFERENCES encomenda(id_encomenda) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS item_encomenda_material (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_item                 BIGINT          NOT NULL,
+    id_material             BIGINT          NOT NULL,
+    quantidade_utilizada    NUMERIC(12,4)   NOT NULL,
+    FOREIGN KEY (id_item)     REFERENCES item_encomenda(id_item) ON DELETE CASCADE,
+    FOREIGN KEY (id_material) REFERENCES material(id_material)
+);
+

@@ -15,32 +15,26 @@
 
     <top>
         <VBox spacing="0">
-
-            <!-- Banner de sucesso -->
             <HBox fx:id="bannerSucesso"
                   visible="false" managed="false"
                   alignment="CENTER" spacing="12"
                   style="-fx-background-color: #2e7d32; -fx-padding: 16 28 16 28;">
-                <Label text="✔"
-                       style="-fx-font-size: 22px; -fx-text-fill: white; -fx-font-weight: bold;"/>
-                <Label fx:id="bannerMensagem"
-                       text="" wrapText="true"
+                <Label text="✔" style="-fx-font-size: 22px; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                <Label fx:id="bannerMensagem" text="" wrapText="true"
                        style="-fx-font-size: 19px; -fx-font-weight: bold; -fx-text-fill: white;"/>
             </HBox>
 
-            <!-- Cabeçalho -->
             <VBox spacing="4" style="-fx-padding: 0 0 20 0;">
                 <HBox alignment="CENTER_LEFT" spacing="12">
                     <Button text="&#8592; Voltar" onAction="#voltar" styleClass="btn-voltar"/>
                     <VBox spacing="2">
                         <Label text="Nova Encomenda"
                                style="-fx-font-size: 26px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
-                        <Label text="Cadastre um produto personalizado"
+                        <Label text="Informe o cliente e adicione os itens da encomenda"
                                style="-fx-font-size: 15px; -fx-text-fill: #999;"/>
                     </VBox>
                 </HBox>
             </VBox>
-
         </VBox>
     </top>
 
@@ -54,87 +48,88 @@
                                               -fx-background-radius: 12; -fx-border-color: #f0d0da;
                                               -fx-border-radius: 12; -fx-border-width: 1;">
 
+                        <!-- Cliente -->
+                        <Label text="Cliente"
+                               style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
                         <VBox spacing="6">
-                            <Label styleClass="form-label-required" text="Código *"/>
-                            <TextField fx:id="campoCodigo" promptText="Ex.: PC-001"
-                                       styleClass="form-field"/>
+                            <Label styleClass="form-label-required" text="Nome do cliente *"/>
+                            <TextField fx:id="campoCliente" promptText="Ex.: Maria Silva" styleClass="form-field"/>
                         </VBox>
-
                         <VBox spacing="6">
-                            <Label styleClass="form-label-required" text="Nome do Produto *"/>
-                            <TextField fx:id="campoNome" promptText="Ex.: Terço Personalizado"
-                                       styleClass="form-field"/>
-                        </VBox>
-
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Descrição"/>
-                            <TextArea fx:id="campoDescricao"
-                                      promptText="Descreva o produto..."
-                                      prefRowCount="3" wrapText="true"
-                                      styleClass="form-field"/>
-                        </VBox>
-
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Prazo de Produção (dias)"/>
-                            <TextField fx:id="campoPrazo" promptText="Ex.: 7"
-                                       prefWidth="160" styleClass="form-field"/>
-                        </VBox>
-
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Observações"/>
-                            <TextArea fx:id="campoObservacoes"
-                                      promptText="Informações adicionais..."
-                                      prefRowCount="3" wrapText="true"
-                                      styleClass="form-field"/>
+                            <Label styleClass="form-label" text="Contato (opcional)"/>
+                            <TextField fx:id="campoContato" promptText="Ex.: (88) 99999-9999"
+                                       prefWidth="260" styleClass="form-field"/>
                         </VBox>
 
                         <Separator/>
 
+                        <!-- Item -->
+                        <Label text="Novo item"
+                               style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                        <VBox spacing="6">
+                            <Label styleClass="form-label-required" text="Nome do item *"/>
+                            <TextField fx:id="campoNome" promptText="Ex.: Terço Personalizado" styleClass="form-field"/>
+                        </VBox>
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Descrição"/>
+                            <TextArea fx:id="campoDescricao" promptText="Descreva o item..."
+                                      prefRowCount="3" wrapText="true" styleClass="form-field"/>
+                        </VBox>
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Prazo de Produção (dias)"/>
+                            <TextField fx:id="campoPrazo" promptText="Ex.: 7" prefWidth="160" styleClass="form-field"/>
+                        </VBox>
+                        <VBox spacing="6">
+                            <Label styleClass="form-label" text="Observações"/>
+                            <TextArea fx:id="campoObservacoes" promptText="Informações adicionais..."
+                                      prefRowCount="3" wrapText="true" styleClass="form-field"/>
+                        </VBox>
+
                         <VBox spacing="10">
-                            <Label text="Preço de Venda"
-                                   style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                            <Label text="Valor do item"
+                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
                             <HBox spacing="24">
-                                <RadioButton fx:id="rbPrecoMateriais"
-                                             text="Calcular pelos materiais"
-                                             styleClass="form-radio"/>
-                                <RadioButton fx:id="rbPrecoManual"
-                                             text="Valor total"
-                                             styleClass="form-radio"/>
+                                <RadioButton fx:id="rbPrecoMateriais" text="Calcular pelos materiais" styleClass="form-radio"/>
+                                <RadioButton fx:id="rbPrecoManual" text="Informar valor" styleClass="form-radio"/>
                             </HBox>
                             <VBox spacing="6">
-                                <Label styleClass="form-label" text="Valor total (R$)"/>
+                                <Label styleClass="form-label" text="Valor do item (R$)"/>
                                 <TextField fx:id="campoValorManual" promptText="Ex.: 45,00"
                                            prefWidth="160" styleClass="form-field"/>
                             </VBox>
+                            <Label fx:id="labelValorItem" text="Valor do item: R$ —"
+                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #8F031E;"/>
                         </VBox>
+
+                        <VBox fx:id="secaoMateriais" spacing="10">
+                            <Label text="Materiais do item"
+                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                            <HBox spacing="8" alignment="CENTER_LEFT">
+                                <ComboBox fx:id="comboMaterial" promptText="Selecione o material"
+                                          prefWidth="260" styleClass="form-field"/>
+                                <TextField fx:id="campoQtdMaterial" promptText="Qtd." prefWidth="80" styleClass="form-field"/>
+                                <Button text="+ Adicionar" onAction="#adicionarMaterial" styleClass="btn-adicionar"/>
+                            </HBox>
+                            <FlowPane fx:id="listaMateriais" hgap="8" vgap="8" style="-fx-padding: 4 0 0 0;"/>
+                        </VBox>
+
+                        <HBox alignment="CENTER_RIGHT">
+                            <Button text="+ Adicionar item à encomenda" onAction="#adicionarItem"
+                                    styleClass="btn-adicionar"/>
+                        </HBox>
 
                         <Separator/>
 
-                        <VBox fx:id="secaoMateriais" spacing="10">
-                            <Label text="Materiais Utilizados"
-                                   style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
-                            <HBox spacing="8" alignment="CENTER_LEFT">
-                                <ComboBox fx:id="comboMaterial"
-                                          promptText="Selecione o material"
-                                          prefWidth="260" styleClass="form-field"/>
-                                <TextField fx:id="campoQtdMaterial"
-                                           promptText="Qtd." prefWidth="80"
-                                           styleClass="form-field"/>
-                                <Button text="+ Adicionar" onAction="#adicionarMaterial"
-                                        styleClass="btn-adicionar"/>
-                            </HBox>
-                            <FlowPane fx:id="listaMateriais" hgap="8" vgap="8"
-                                      style="-fx-padding: 4 0 0 0;"/>
-                        </VBox>
+                        <!-- Itens já adicionados -->
+                        <Label text="Itens da encomenda"
+                               style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                        <VBox fx:id="listaItens" spacing="8"/>
 
-                        <Label fx:id="labelStatus" wrapText="true"
-                               style="-fx-font-size: 15px;"/>
+                        <Label fx:id="labelStatus" wrapText="true" style="-fx-font-size: 15px;"/>
 
-                        <HBox spacing="12" alignment="CENTER_RIGHT"
-                              style="-fx-padding: 8 0 0 0;">
+                        <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 8 0 0 0;">
                             <Button text="Limpar" onAction="#limpar" styleClass="btn-voltar"/>
-                            <Button text="&#10003;  Cadastrar Encomenda"
-                                    onAction="#salvar" styleClass="btn-salvar"/>
+                            <Button text="&#10003;  Cadastrar Encomenda" onAction="#salvar" styleClass="btn-salvar"/>
                         </HBox>
 
                     </VBox>
@@ -148,48 +143,32 @@
                          -fx-border-color: #f0d0da; -fx-border-radius: 12;
                          -fx-border-width: 1; -fx-padding: 20;">
 
-                <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label fx:id="previewNome"
-                           text="Nome do produto"
-                           style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #D31946;"
-                           wrapText="true" HBox.hgrow="ALWAYS"/>
-                    <Label fx:id="previewCodigo" text="—" styleClass="detalhe-codigo-badge"/>
-                </HBox>
+                <Label fx:id="previewCliente" text="Cliente" wrapText="true"
+                       style="-fx-font-size: 18px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
 
                 <Separator/>
-
-                <HBox>
-                    <Label text="Personalizado"
-                           style="-fx-background-color: #FFC1D6; -fx-background-radius: 20;
-                                  -fx-text-fill: #8F031E; -fx-font-size: 14px;
-                                  -fx-font-weight: bold; -fx-padding: 4 14 4 14;"/>
-                </HBox>
-
-                <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="Valor:" styleClass="detalhe-info-label"/>
-                    <Label fx:id="previewValor" text="R$ —" styleClass="detalhe-valor"/>
-                </HBox>
-
-                <HBox alignment="CENTER_LEFT" spacing="8">
-                    <Label text="Prazo:" styleClass="detalhe-info-label"/>
-                    <Label fx:id="previewPrazo" text="—" styleClass="detalhe-info-valor"/>
-                </HBox>
-
-                <Separator/>
-
-                <VBox spacing="4">
-                    <Label text="Descricao" styleClass="detalhe-secao-titulo"/>
-                    <Label fx:id="previewDescricao" text="Sem descricao."
-                           wrapText="true" styleClass="detalhe-secao-texto"/>
-                </VBox>
 
                 <VBox spacing="8">
-                    <Label text="Materiais utilizados" styleClass="detalhe-secao-titulo"/>
-                    <FlowPane fx:id="previewMateriais" hgap="8" vgap="8"/>
+                    <Label text="Itens" styleClass="detalhe-secao-titulo"/>
+                    <VBox fx:id="previewItens" spacing="6"/>
                 </VBox>
 
-                <Region VBox.vgrow="ALWAYS"/>
+                <Separator/>
 
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Subtotal:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewSubtotal" text="R$ —" styleClass="detalhe-info-valor"/>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Total (+20%):" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewTotal" text="R$ —" styleClass="detalhe-valor"/>
+                </HBox>
+                <HBox alignment="CENTER_LEFT" spacing="8">
+                    <Label text="Entrega prevista:" styleClass="detalhe-info-label"/>
+                    <Label fx:id="previewEntrega" text="—" styleClass="detalhe-info-valor"/>
+                </HBox>
+
+                <Region VBox.vgrow="ALWAYS"/>
             </VBox>
 
         </HBox>

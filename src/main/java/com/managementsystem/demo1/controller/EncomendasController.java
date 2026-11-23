@@ -1,9 +1,9 @@
 package com.managementsystem.demo1.controller;
 
-import com.managementsystem.demo1.model.Produto;
-import com.managementsystem.demo1.model.ProdutoMaterial;
-import com.managementsystem.demo1.model.TipoProduto;
-import com.managementsystem.demo1.service.ProdutoService;
+import com.managementsystem.demo1.model.Encomenda;
+import com.managementsystem.demo1.model.ItemEncomenda;
+import com.managementsystem.demo1.model.SituacaoEncomenda;
+import com.managementsystem.demo1.service.EncomendaService;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
@@ -18,43 +18,51 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 @Scope("prototype")
 public class EncomendasController {
 
-    @FXML private TextField                      campoBusca;
-    @FXML private TableView<Produto>             tabelaEncomendas;
-    @FXML private TableColumn<Produto, String>   colNome;
-    @FXML private TableColumn<Produto, String>   colCodigo;
-    @FXML private TableColumn<Produto, String>   colPrazo;
-    @FXML private TableColumn<Produto, String>   colValor;
-    @FXML private Label                          labelTotal;
-    @FXML private Label                          labelPagina;
-    @FXML private Button                         btnAnterior;
-    @FXML private Button                         btnProximo;
+    @FXML private TextField                        campoBusca;
+    @FXML private TableView<Encomenda>             tabelaEncomendas;
+    @FXML private TableColumn<Encomenda, String>   colCliente;
+    @FXML private TableColumn<Encomenda, String>   colItens;
+    @FXML private TableColumn<Encomenda, String>   colEntrega;
+    @FXML private TableColumn<Encomenda, String>   colSituacao;
+    @FXML private TableColumn<Encomenda, String>   colValor;
+    @FXML private Label                            labelTotal;
+    @FXML private Label                            labelPagina;
+    @FXML private Button                           btnAnterior;
+    @FXML private Button                           btnProximo;
 
     @FXML private ScrollPane painelDetalhes;
-    @FXML private Label      detNome;
-    @FXML private Label      detCodigo;
-    @FXML private Label      detValor;
-    @FXML private Label      detPrazo;
-    @FXML private Label      detDescricao;
+    @FXML private Label      detCliente;
+    @FXML private Label      detSituacao;
+    @FXML private Label      detContato;
+    @FXML private Label      detSubtotal;
+    @FXML private Label      detValorTotal;
+    @FXML private Label      detDataPedido;
+    @FXML private Label      detDataEntrega;
+    @FXML private VBox       painelItens;
     @FXML private Label      detObservacoes;
-    @FXML private VBox       secaoMateriais;
-    @FXML private FlowPane   painelMateriais;
+    @FXML private Button     btnAvancarSituacao;
+    @FXML private Button     btnCancelarEncomenda;
 
     private static final int ITENS_POR_PAGINA = 14;
+    private static final DateTimeFormatter DATA_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
     private int paginaAtual = 1;
-    private List<Produto> todos     = List.of();
-    private List<Produto> filtrados = List.of();
+    private List<Encomenda> todos     = List.of();
+    private List<Encomenda> filtrados = List.of();
 
-    private final ProdutoService produtoService;
+    private final EncomendaService encomendaService;
 
-    public EncomendasController(ProdutoService produtoService) {
-        this.produtoService = produtoService;
+    public EncomendasController(EncomendaService encomendaService) {
+        this.encomendaService = encomendaService;
     }
 
     @FXML
@@ -67,18 +75,32 @@ public class EncomendasController {
     }
 
     private void configurarColunas() {
-        colNome.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNome()));
-        colCodigo.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getCodigo()));
-        colPrazo.setCellValueFactory(c -> {
-            Integer prazo = c.getValue().getPrazoProducaoDias();
-            return new SimpleStringProperty(prazo != null ? prazo + " dias" : "—");
+        colCliente.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNomeCliente()));
+
+        colItens.setCellValueFactory(c -> {
+            List<ItemEncomenda> itens = c.getValue().getItens();
+            if (itens == null || itens.isEmpty()) return new SimpleStringProperty("—");
+            String resumo = itens.stream()
+                    .map(ItemEncomenda::getNome)
+                    .collect(Collectors.joining(", "));
+            return new SimpleStringProperty(resumo);
         });
+
+        colEntrega.setCellValueFactory(c -> {
+            var data = c.getValue().getDataEntregaPrevista();
+            return new SimpleStringProperty(data != null ? data.format(DATA_FMT) : "Sem prazo");
+        });
+
+        colSituacao.setCellValueFactory(c ->
+                new SimpleStringProperty(formatarSituacao(c.getValue().getSituacao())));
+
         colValor.setCellValueFactory(c -> {
-            BigDecimal v = c.getValue().getValor();
-            return new SimpleStringProperty(v != null ? "R$" + String.format("%.2f", v) : "—");
+            BigDecimal v = c.getValue().getValorTotal();
+            return new SimpleStringProperty(v != null ? "R$ " + String.format("%.2f", v) : "—");
         });
-        colCodigo.setStyle("-fx-alignment: CENTER;");
-        colPrazo.setStyle("-fx-alignment: CENTER;");
+
+        colEntrega.setStyle("-fx-alignment: CENTER;");
+        colSituacao.setStyle("-fx-alignment: CENTER;");
         colValor.setStyle("-fx-alignment: CENTER;");
     }
 
@@ -88,9 +110,7 @@ public class EncomendasController {
     }
 
     private void carregar() {
-        todos = produtoService.listarTodos().stream()
-                .filter(p -> p.getTipo() == TipoProduto.PERSONALIZADO)
-                .toList();
+        todos = encomendaService.listarTodas();
         filtrar(campoBusca.getText());
     }
 
@@ -101,8 +121,9 @@ public class EncomendasController {
         } else {
             String lower = termo.toLowerCase();
             filtrados = todos.stream()
-                    .filter(p -> p.getNome().toLowerCase().contains(lower)
-                              || p.getCodigo().toLowerCase().contains(lower))
+                    .filter(e -> e.getNomeCliente().toLowerCase().contains(lower)
+                            || (e.getItens() != null && e.getItens().stream()
+                            .anyMatch(i -> i.getNome().toLowerCase().contains(lower))))
                     .toList();
         }
         exibirPagina();
@@ -121,31 +142,111 @@ public class EncomendasController {
         btnProximo.setDisable(paginaAtual >= totalPaginas);
     }
 
-    private void mostrarDetalhes(Produto p) {
-        detNome.setText(p.getNome());
-        detCodigo.setText(p.getCodigo());
-        detValor.setText(p.getValor() != null ? "R$ " + String.format("%.2f", p.getValor()) : "—");
-        detPrazo.setText(p.getPrazoProducaoDias() != null ? p.getPrazoProducaoDias() + " dias" : "Não informado");
-        detDescricao.setText(Optional.ofNullable(p.getDescricao()).filter(d -> !d.isBlank()).orElse("Sem descrição."));
-        detObservacoes.setText(Optional.ofNullable(p.getObservacoes()).filter(o -> !o.isBlank()).orElse("Sem observações."));
+    private void mostrarDetalhes(Encomenda e) {
+        detCliente.setText(e.getNomeCliente());
+        detSituacao.setText(formatarSituacao(e.getSituacao()));
+        detContato.setText(Optional.ofNullable(e.getContatoCliente())
+                .filter(c -> !c.isBlank())
+                .map(c -> "Contato: " + c)
+                .orElse("Sem contato informado"));
 
-        painelMateriais.getChildren().clear();
-        List<ProdutoMaterial> mats = p.getMateriaisUtilizados();
-        if (mats != null && !mats.isEmpty()) {
-            for (ProdutoMaterial pm : mats) {
-                Label tag = new Label(pm.getQuantidadeUtilizada().stripTrailingZeros().toPlainString()
-                        + "x " + pm.getMaterial().getNome());
-                tag.getStyleClass().add("material-tag");
-                painelMateriais.getChildren().add(tag);
+        detSubtotal.setText(e.getSubtotal() != null ? "R$ " + String.format("%.2f", e.getSubtotal()) : "—");
+        detValorTotal.setText(e.getValorTotal() != null ? "R$ " + String.format("%.2f", e.getValorTotal()) : "—");
+        detDataPedido.setText(e.getDataPedido() != null ? e.getDataPedido().format(DATA_FMT) : "—");
+        detDataEntrega.setText(e.getDataEntregaPrevista() != null ? e.getDataEntregaPrevista().format(DATA_FMT) : "Não definida");
+        detObservacoes.setText(Optional.ofNullable(e.getObservacoes())
+                .filter(o -> !o.isBlank())
+                .orElse("Sem observações."));
+
+        painelItens.getChildren().clear();
+        if (e.getItens() != null && !e.getItens().isEmpty()) {
+            for (ItemEncomenda item : e.getItens()) {
+                VBox cardItem = new VBox(2);
+                cardItem.setStyle("-fx-background-color: #FFF8FB; -fx-padding: 8 10; " +
+                        "-fx-background-radius: 8; -fx-border-color: #f0d0da; -fx-border-radius: 8;");
+                Label lblNome = new Label(item.getNome() + " — R$ " + String.format("%.2f", item.getValor()));
+                lblNome.setStyle("-fx-font-weight: bold; -fx-text-fill: #1a1a2e; -fx-font-size: 13px;");
+                cardItem.getChildren().add(lblNome);
+
+                if (item.getDescricao() != null && !item.getDescricao().isBlank()) {
+                    Label lblDesc = new Label(item.getDescricao());
+                    lblDesc.setWrapText(true);
+                    lblDesc.setStyle("-fx-text-fill: #666; -fx-font-size: 12px;");
+                    cardItem.getChildren().add(lblDesc);
+                }
+                painelItens.getChildren().add(cardItem);
             }
-        } else {
-            Label sem = new Label("Nenhum material registrado.");
-            sem.setStyle("-fx-text-fill: #aaa; -fx-font-size: 14px;");
-            painelMateriais.getChildren().add(sem);
         }
+
+        // Configura botões de acordo com a situação atual
+        SituacaoEncomenda prox = proximaSituacao(e.getSituacao());
+        if (prox != null) {
+            btnAvancarSituacao.setText("Marcar como " + formatarSituacao(prox));
+            btnAvancarSituacao.setVisible(true);
+            btnAvancarSituacao.setManaged(true);
+        } else {
+            btnAvancarSituacao.setVisible(false);
+            btnAvancarSituacao.setManaged(false);
+        }
+
+        boolean podeCancelar = e.getSituacao() != SituacaoEncomenda.ENTREGUE
+                && e.getSituacao() != SituacaoEncomenda.CANCELADA;
+        btnCancelarEncomenda.setVisible(podeCancelar);
+        btnCancelarEncomenda.setManaged(podeCancelar);
 
         painelDetalhes.setVisible(true);
         painelDetalhes.setManaged(true);
+    }
+
+    private SituacaoEncomenda proximaSituacao(SituacaoEncomenda atual) {
+        return switch (atual) {
+            case PENDENTE    -> SituacaoEncomenda.EM_PRODUCAO;
+            case EM_PRODUCAO -> SituacaoEncomenda.PRONTA;
+            case PRONTA      -> SituacaoEncomenda.ENTREGUE;
+            case ENTREGUE, CANCELADA -> null;
+        };
+    }
+
+    private String formatarSituacao(SituacaoEncomenda s) {
+        if (s == null) return "—";
+        return switch (s) {
+            case PENDENTE    -> "Pendente";
+            case EM_PRODUCAO -> "Em Produção";
+            case PRONTA      -> "Pronta";
+            case ENTREGUE    -> "Entregue";
+            case CANCELADA   -> "Cancelada";
+        };
+    }
+
+    @FXML
+    public void avancarSituacao() {
+        Encomenda sel = tabelaEncomendas.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+        SituacaoEncomenda prox = proximaSituacao(sel.getSituacao());
+        if (prox == null) return;
+
+        Encomenda atualizada = encomendaService.alterarSituacao(sel.getIdEncomenda(), prox);
+        carregar();
+        mostrarDetalhes(atualizada);
+    }
+
+    @FXML
+    public void cancelarEncomenda() {
+        Encomenda sel = tabelaEncomendas.getSelectionModel().getSelectedItem();
+        if (sel == null) return;
+
+        Dialog<ButtonType> dialog = criarDialogConfirmacao(
+                "Cancelar encomenda de \"" + sel.getNomeCliente() + "\"?",
+                "A situação será alterada para Cancelada.",
+                "Sim, Cancelar");
+        dialog.showAndWait().ifPresent(r -> {
+            if (r == ButtonType.OK) {
+                Encomenda atualizada = encomendaService.alterarSituacao(
+                        sel.getIdEncomenda(), SituacaoEncomenda.CANCELADA);
+                carregar();
+                mostrarDetalhes(atualizada);
+            }
+        });
     }
 
     @FXML public void paginaAnterior() { if (paginaAtual > 1) { paginaAtual--; exibirPagina(); } }
@@ -163,13 +264,16 @@ public class EncomendasController {
 
     @FXML
     public void deletarEncomenda() {
-        Produto selecionado = tabelaEncomendas.getSelectionModel().getSelectedItem();
+        Encomenda selecionado = tabelaEncomendas.getSelectionModel().getSelectedItem();
         if (selecionado == null) return;
 
-        Dialog<ButtonType> dialog = criarDialogConfirmacao(selecionado.getNome());
+        Dialog<ButtonType> dialog = criarDialogConfirmacao(
+                "Deletar encomenda de \"" + selecionado.getNomeCliente() + "\"?",
+                "Esta ação não pode ser desfeita.",
+                "Deletar");
         dialog.showAndWait().ifPresent(r -> {
             if (r == ButtonType.OK) {
-                produtoService.excluir(selecionado.getIdProduto());
+                encomendaService.excluir(selecionado.getIdEncomenda());
                 painelDetalhes.setVisible(false);
                 painelDetalhes.setManaged(false);
                 carregar();
@@ -177,46 +281,34 @@ public class EncomendasController {
         });
     }
 
-    @FXML
-    public void editarEncomenda() {
-        Produto selecionado = tabelaEncomendas.getSelectionModel().getSelectedItem();
-        if (selecionado == null) return;
-        javafx.scene.Scene scene = tabelaEncomendas.getScene();
-        if (scene == null) return;
-        javafx.scene.Node sp = scene.lookup("#contentArea");
-        if (sp instanceof javafx.scene.layout.StackPane stackPane
-                && stackPane.getUserData() instanceof MainLayoutController main)
-            main.navEditarProduto(selecionado);
-    }
-
-    private Dialog<ButtonType> criarDialogConfirmacao(String nome) {
+    private Dialog<ButtonType> criarDialogConfirmacao(String tituloTexto, String msgTexto, String textoConfirmar) {
         Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Confirmar exclusão");
+        dialog.setTitle("Confirmação");
         dialog.initModality(javafx.stage.Modality.APPLICATION_MODAL);
         VBox conteudo = new VBox(16);
         conteudo.setPadding(new Insets(24, 28, 24, 28));
         conteudo.setStyle("-fx-background-color: #FFF0F5; -fx-background-radius: 12;");
-        Label titulo = new Label("Deletar \"" + nome + "\"?");
+        Label titulo = new Label(tituloTexto);
         titulo.setFont(Font.font("System", FontWeight.BOLD, 17));
         titulo.setTextFill(Color.web("#D31946"));
         titulo.setWrapText(true);
-        Label msg = new Label("Esta ação não pode ser desfeita.");
+        Label msg = new Label(msgTexto);
         msg.setFont(Font.font("System", 15));
         msg.setTextFill(Color.web("#555"));
         HBox botoes = new HBox(12);
         botoes.setAlignment(Pos.CENTER_RIGHT);
-        Button btnCancelar = new Button("Cancelar");
+        Button btnCancelar = new Button("Voltar");
         btnCancelar.setStyle("-fx-background-color: white; -fx-background-radius: 20; " +
                 "-fx-border-color: #ccc; -fx-border-radius: 20; -fx-border-width: 1.5; " +
                 "-fx-text-fill: #555; -fx-font-size: 14px; -fx-font-weight: bold; " +
                 "-fx-padding: 7 18 7 18; -fx-cursor: hand;");
-        Button btnDeletar = new Button("Deletar");
-        btnDeletar.setStyle("-fx-background-color: #D31946; -fx-background-radius: 20; " +
+        Button btnConfirmar = new Button(textoConfirmar);
+        btnConfirmar.setStyle("-fx-background-color: #D31946; -fx-background-radius: 20; " +
                 "-fx-text-fill: white; -fx-font-size: 14px; -fx-font-weight: bold; " +
                 "-fx-padding: 7 22 7 22; -fx-cursor: hand;");
         btnCancelar.setOnAction(e -> { dialog.setResult(ButtonType.CANCEL); dialog.close(); });
-        btnDeletar.setOnAction(e ->  { dialog.setResult(ButtonType.OK);     dialog.close(); });
-        botoes.getChildren().addAll(btnCancelar, btnDeletar);
+        btnConfirmar.setOnAction(e ->  { dialog.setResult(ButtonType.OK);     dialog.close(); });
+        botoes.getChildren().addAll(btnCancelar, btnConfirmar);
         conteudo.getChildren().addAll(titulo, msg, botoes);
         dialog.getDialogPane().setContent(conteudo);
         dialog.getDialogPane().getButtonTypes().clear();
