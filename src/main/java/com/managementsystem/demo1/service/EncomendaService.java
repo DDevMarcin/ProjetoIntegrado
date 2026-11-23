@@ -3,6 +3,7 @@ package com.managementsystem.demo1.service;
 import com.managementsystem.demo1.model.*;
 import com.managementsystem.demo1.repository.EncomendaRepository;
 import com.managementsystem.demo1.repository.MaterialRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,11 +23,20 @@ public class EncomendaService {
 
     private final EncomendaRepository encomendaRepository;
     private final MaterialRepository materialRepository;
+    private final MaterialService materialService;
 
     public EncomendaService(EncomendaRepository encomendaRepository,
                             MaterialRepository materialRepository) {
+        this(encomendaRepository, materialRepository, null);
+    }
+
+    @Autowired
+    public EncomendaService(EncomendaRepository encomendaRepository,
+                            MaterialRepository materialRepository,
+                            MaterialService materialService) {
         this.encomendaRepository = encomendaRepository;
         this.materialRepository = materialRepository;
+        this.materialService = materialService;
     }
 
     @Transactional
@@ -57,7 +67,7 @@ public class EncomendaService {
 
         BigDecimal subtotal = BigDecimal.ZERO;
         for (ItemEncomendaInput input : itens) {
-            ItemEncomenda item = montarItem(input);
+            ItemEncomenda item = montarItem(input, encomenda.getNomeCliente());
             encomenda.adicionarItem(item);
             subtotal = subtotal.add(item.getValor());
         }
@@ -76,7 +86,7 @@ public class EncomendaService {
         return encomendaRepository.save(encomenda);
     }
 
-    private ItemEncomenda montarItem(ItemEncomendaInput input) {
+    private ItemEncomenda montarItem(ItemEncomendaInput input, String nomeCliente) {
         if (input == null || input.nome() == null || input.nome().isBlank()) {
             throw new IllegalArgumentException("Nome do item é obrigatório.");
         }
@@ -125,8 +135,30 @@ public class EncomendaService {
                 if (m.quantidadeUtilizada() == null || m.quantidadeUtilizada().signum() <= 0) {
                     throw new IllegalArgumentException("Quantidade utilizada deve ser maior que zero.");
                 }
+
                 Material material = materialRepository.findById(m.idMaterial())
                         .orElseThrow(() -> new NoSuchElementException("Material não encontrado: id " + m.idMaterial()));
+
+                // Dá baixa no estoque e registra movimentação de SAIDA
+                if (materialService != null) {
+                    materialService.registrarMovimentacao(
+                            material.getIdMaterial(),
+                            TipoMovimentacaoMaterial.SAIDA,
+                            m.quantidadeUtilizada(),
+                            "Encomenda - " + nomeCliente,
+                            "Item: " + item.getNome()
+                    );
+                } else {
+                    BigDecimal saldoAtual = material.getQuantidadeEstoque() != null
+                            ? material.getQuantidadeEstoque() : BigDecimal.ZERO;
+                    if (saldoAtual.compareTo(m.quantidadeUtilizada()) < 0) {
+                        throw new IllegalArgumentException(
+                                "Saldo insuficiente em estoque para o material: " + material.getNome());
+                    }
+                    material.setQuantidadeEstoque(saldoAtual.subtract(m.quantidadeUtilizada()));
+                    materialRepository.save(material);
+                }
+
                 item.adicionarMaterial(new ItemEncomendaMaterial(material, m.quantidadeUtilizada()));
                 if (!input.valorManual()) {
                     valor = valor.add(material.getPrecoUnidade().multiply(m.quantidadeUtilizada()));
@@ -152,9 +184,41 @@ public class EncomendaService {
         if (!transicaoPermitida(atual, nova)) {
             throw new IllegalArgumentException("Não é possível mudar de " + atual + " para " + nova + ".");
         }
+
+        // Se a encomenda for cancelada, devolve os materiais ao estoque
+        if (nova == SituacaoEncomenda.CANCELADA) {
+            estornarMateriais(encomenda);
+        }
+
         encomenda.setSituacao(nova);
-        // aqui entra, depois, a regra de apagar os dados do cliente quando nova == ENTREGUE
         return encomendaRepository.save(encomenda);
+    }
+
+    private void estornarMateriais(Encomenda encomenda) {
+        if (encomenda.getItens() == null) return;
+
+        for (ItemEncomenda item : encomenda.getItens()) {
+            if (item.getMateriais() == null) continue;
+            for (ItemEncomendaMaterial iem : item.getMateriais()) {
+                Material mat = iem.getMaterial();
+                if (mat == null || iem.getQuantidadeUtilizada() == null) continue;
+
+                if (materialService != null) {
+                    materialService.registrarMovimentacao(
+                            mat.getIdMaterial(),
+                            TipoMovimentacaoMaterial.ENTRADA,
+                            iem.getQuantidadeUtilizada(),
+                            "Estorno cancelamento encomenda - " + encomenda.getNomeCliente(),
+                            "Item: " + item.getNome()
+                    );
+                } else {
+                    BigDecimal saldoAtual = mat.getQuantidadeEstoque() != null
+                            ? mat.getQuantidadeEstoque() : BigDecimal.ZERO;
+                    mat.setQuantidadeEstoque(saldoAtual.add(iem.getQuantidadeUtilizada()));
+                    materialRepository.save(mat);
+                }
+            }
+        }
     }
 
     private boolean transicaoPermitida(SituacaoEncomenda de, SituacaoEncomenda para) {
