@@ -162,7 +162,7 @@ public class MainLayoutController {
     @FXML
     public void navFinanceiro() {
         setActive(btnFinanceiro);
-        loadPage("/fxml/Placeholder.fxml");
+        loadPage("/fxml/Financeiro.fxml");
     }
 
     // ──────────────────────────────────────────
