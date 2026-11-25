@@ -39,7 +39,13 @@ public class ItemEncomenda {
     private boolean valorManual;
 
     @Column(nullable = false, precision = 12, scale = 2)
-    private BigDecimal valor = BigDecimal.ZERO;         // custo do item, sem lucro
+    private BigDecimal valor = BigDecimal.ZERO;
+
+    @Column(name = "id_produto")
+    private Long idProduto;
+
+    @Column(name = "quantidade_produto")
+    private Integer quantidadeProduto;
 
     @OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true,
             fetch = FetchType.EAGER)
@@ -117,6 +123,22 @@ public class ItemEncomenda {
         this.valor = valor;
     }
 
+    public Long getIdProduto() {
+        return idProduto;
+    }
+
+    public void setIdProduto(Long idProduto) {
+        this.idProduto = idProduto;
+    }
+
+    public Integer getQuantidadeProduto() {
+        return quantidadeProduto;
+    }
+
+    public void setQuantidadeProduto(Integer quantidadeProduto) {
+        this.quantidadeProduto = quantidadeProduto;
+    }
+
     public List<ItemEncomendaMaterial> getMateriais() {
         return materiais;
     }
@@ -124,5 +146,4 @@ public class ItemEncomenda {
     public void setMateriais(List<ItemEncomendaMaterial> materiais) {
         this.materiais = materiais;
     }
-
 }

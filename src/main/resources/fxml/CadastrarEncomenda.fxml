@@ -63,55 +63,89 @@
 
                         <Separator/>
 
-                        <!-- Item -->
+                        <!-- Seletor de Tipo de Item -->
                         <Label text="Novo item"
                                style="-fx-font-size: 17px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
-                        <VBox spacing="6">
-                            <Label styleClass="form-label-required" text="Nome do item *"/>
-                            <TextField fx:id="campoNome" promptText="Ex.: Terço Personalizado" styleClass="form-field"/>
-                        </VBox>
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Descrição"/>
-                            <TextArea fx:id="campoDescricao" promptText="Descreva o item..."
-                                      prefRowCount="3" wrapText="true" styleClass="form-field"/>
-                        </VBox>
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Prazo de Produção (dias)"/>
-                            <TextField fx:id="campoPrazo" promptText="Ex.: 7" prefWidth="160" styleClass="form-field"/>
-                        </VBox>
-                        <VBox spacing="6">
-                            <Label styleClass="form-label" text="Observações"/>
-                            <TextArea fx:id="campoObservacoes" promptText="Informações adicionais..."
-                                      prefRowCount="3" wrapText="true" styleClass="form-field"/>
-                        </VBox>
 
-                        <VBox spacing="10">
-                            <Label text="Valor do item"
-                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                        <VBox spacing="8">
+                            <Label styleClass="form-label-required" text="Tipo de item *"/>
                             <HBox spacing="24">
-                                <RadioButton fx:id="rbPrecoMateriais" text="Calcular pelos materiais" styleClass="form-radio"/>
-                                <RadioButton fx:id="rbPrecoManual" text="Informar valor" styleClass="form-radio"/>
+                                <RadioButton fx:id="rbTipoPersonalizado" text="Item Personalizado" styleClass="form-radio"/>
+                                <RadioButton fx:id="rbTipoPrePronto" text="Produto Pré-Pronto" styleClass="form-radio"/>
                             </HBox>
-                            <VBox spacing="6">
-                                <Label styleClass="form-label" text="Valor do item (R$)"/>
-                                <TextField fx:id="campoValorManual" promptText="Ex.: 45,00"
-                                           prefWidth="160" styleClass="form-field"/>
-                            </VBox>
-                            <Label fx:id="labelValorItem" text="Valor do item: R$ —"
-                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #8F031E;"/>
                         </VBox>
 
-                        <VBox fx:id="secaoMateriais" spacing="10">
-                            <Label text="Materiais do item"
-                                   style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
-                            <HBox spacing="8" alignment="CENTER_LEFT">
-                                <ComboBox fx:id="comboMaterial" promptText="Selecione o material"
-                                          prefWidth="260" styleClass="form-field"/>
-                                <TextField fx:id="campoQtdMaterial" promptText="Qtd." prefWidth="80" styleClass="form-field"/>
-                                <Button text="+ Adicionar" onAction="#adicionarMaterial" styleClass="btn-adicionar"/>
+                        <!-- Seção Pré-Pronto -->
+                        <VBox fx:id="secaoPrePronto" spacing="10"
+                              visible="false" managed="false"
+                              style="-fx-background-color: #FFF8FB; -fx-padding: 14; -fx-background-radius: 10; -fx-border-color: #f0d0da; -fx-border-radius: 10;">
+                            <Label text="Selecionar Produto Pré-Pronto"
+                                   style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                            <HBox spacing="12" alignment="CENTER_LEFT">
+                                <VBox spacing="4" HBox.hgrow="ALWAYS">
+                                    <Label styleClass="form-label" text="Produto cadastrado *"/>
+                                    <ComboBox fx:id="comboProdutoPrePronto" promptText="Escolha um produto pré-pronto..."
+                                              maxWidth="Infinity" styleClass="form-field"/>
+                                </VBox>
+                                <VBox spacing="4" prefWidth="110">
+                                    <Label styleClass="form-label" text="Quantidade *"/>
+                                    <TextField fx:id="campoQtdPrePronto" text="1" promptText="Ex.: 1" styleClass="form-field"/>
+                                </VBox>
                             </HBox>
-                            <FlowPane fx:id="listaMateriais" hgap="8" vgap="8" style="-fx-padding: 4 0 0 0;"/>
+                            <Label fx:id="labelInfoPrePronto" text="Selecione um produto para ver detalhes e estoque."
+                                   wrapText="true" style="-fx-font-size: 13px; -fx-text-fill: #666;"/>
                         </VBox>
+
+                        <!-- Seção Personalizado -->
+                        <VBox fx:id="secaoPersonalizado" spacing="14">
+                            <VBox spacing="6">
+                                <Label styleClass="form-label-required" text="Nome do item *"/>
+                                <TextField fx:id="campoNome" promptText="Ex.: Terço Personalizado" styleClass="form-field"/>
+                            </VBox>
+                            <VBox spacing="6">
+                                <Label styleClass="form-label" text="Descrição"/>
+                                <TextArea fx:id="campoDescricao" promptText="Descreva o item..."
+                                          prefRowCount="2" wrapText="true" styleClass="form-field"/>
+                            </VBox>
+                            <VBox spacing="6">
+                                <Label styleClass="form-label" text="Prazo de Produção (dias)"/>
+                                <TextField fx:id="campoPrazo" promptText="Ex.: 7" prefWidth="160" styleClass="form-field"/>
+                            </VBox>
+                            <VBox spacing="6">
+                                <Label styleClass="form-label" text="Observações"/>
+                                <TextArea fx:id="campoObservacoes" promptText="Informações adicionais..."
+                                          prefRowCount="2" wrapText="true" styleClass="form-field"/>
+                            </VBox>
+
+                            <VBox spacing="10">
+                                <Label text="Valor do item"
+                                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                                <HBox spacing="24">
+                                    <RadioButton fx:id="rbPrecoMateriais" text="Calcular pelos materiais" styleClass="form-radio"/>
+                                    <RadioButton fx:id="rbPrecoManual" text="Informar valor" styleClass="form-radio"/>
+                                </HBox>
+                                <VBox spacing="6">
+                                    <Label styleClass="form-label" text="Valor do item (R$)"/>
+                                    <TextField fx:id="campoValorManual" promptText="Ex.: 45,00"
+                                               prefWidth="160" styleClass="form-field"/>
+                                </VBox>
+                            </VBox>
+
+                            <VBox fx:id="secaoMateriais" spacing="10">
+                                <Label text="Materiais do item"
+                                       style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>
+                                <HBox spacing="8" alignment="CENTER_LEFT">
+                                    <ComboBox fx:id="comboMaterial" promptText="Selecione o material"
+                                              prefWidth="260" styleClass="form-field"/>
+                                    <TextField fx:id="campoQtdMaterial" promptText="Qtd." prefWidth="80" styleClass="form-field"/>
+                                    <Button text="+ Adicionar" onAction="#adicionarMaterial" styleClass="btn-adicionar"/>
+                                </HBox>
+                                <FlowPane fx:id="listaMateriais" hgap="8" vgap="8" style="-fx-padding: 4 0 0 0;"/>
+                            </VBox>
+                        </VBox>
+
+                        <Label fx:id="labelValorItem" text="Valor do item: R$ —"
+                               style="-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #8F031E;"/>
 
                         <HBox alignment="CENTER_RIGHT">
                             <Button text="+ Adicionar item à encomenda" onAction="#adicionarItem"

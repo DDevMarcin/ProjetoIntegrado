@@ -9,5 +9,17 @@ public record ItemEncomendaInput(String nome,
                                  String observacoes,
                                  boolean valorManual,
                                  BigDecimal valorInformado,
-                                 List<ItemMaterialInput> materiais) {
+                                 List<ItemMaterialInput> materiais,
+                                 Long idProduto,
+                                 Integer quantidadeProduto) {
+
+    public ItemEncomendaInput(String nome,
+                              String descricao,
+                              Integer prazoProducaoDias,
+                              String observacoes,
+                              boolean valorManual,
+                              BigDecimal valorInformado,
+                              List<ItemMaterialInput> materiais) {
+        this(nome, descricao, prazoProducaoDias, observacoes, valorManual, valorInformado, materiais, null, null);
+    }
 }
