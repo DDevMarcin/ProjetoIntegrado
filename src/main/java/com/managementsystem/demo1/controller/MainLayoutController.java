@@ -153,6 +153,11 @@ public class MainLayoutController {
         loadPage("/fxml/CadastrarEncomenda.fxml");
     }
 
+    public void navHistoricoEncomendas() {
+        setActive(btnEncomendas);
+        loadPage("/fxml/HistoricoEncomendas.fxml");
+    }
+
     @FXML
     public void navEstoque() {
         setActive(btnEstoque);

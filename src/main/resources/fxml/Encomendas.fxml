@@ -20,10 +20,13 @@
                    style="-fx-font-size: 28px; -fx-font-weight: bold; -fx-text-fill: #1a1a2e;"/>
             <HBox spacing="12" alignment="CENTER_LEFT" style="-fx-padding: 16 0 16 0;">
                 <TextField fx:id="campoBusca"
-                           promptText="Buscar por cliente ou item..."
+                           promptText="Buscar por ID, cliente ou item..."
                            prefWidth="300"
                            styleClass="busca-field"/>
                 <Region HBox.hgrow="ALWAYS"/>
+                <Button text="Histórico de Entregas"
+                        onAction="#abrirHistorico"
+                        styleClass="btn-voltar"/>
                 <Button text="+ Nova Encomenda"
                         onAction="#abrirFormCadastro"
                         styleClass="btn-criar"/>
@@ -44,14 +47,15 @@
                            VBox.vgrow="ALWAYS"
                            styleClass="tabela-produtos">
                     <columns>
-                        <TableColumn fx:id="colCliente"  text="Cliente"          prefWidth="200"/>
-                        <TableColumn fx:id="colItens"    text="Itens"            prefWidth="180"/>
-                        <TableColumn fx:id="colEntrega"  text="Entrega Prevista" prefWidth="130"/>
-                        <TableColumn fx:id="colSituacao" text="Situação"         prefWidth="130"/>
+                        <TableColumn fx:id="colId"       text="ID"               prefWidth="65"/>
+                        <TableColumn fx:id="colCliente"  text="Cliente"          prefWidth="185"/>
+                        <TableColumn fx:id="colItens"    text="Itens"            prefWidth="170"/>
+                        <TableColumn fx:id="colEntrega"  text="Entrega Prevista" prefWidth="125"/>
+                        <TableColumn fx:id="colSituacao" text="Situação"         prefWidth="125"/>
                         <TableColumn fx:id="colValor"    text="Total (+20%)"     prefWidth="110"/>
                     </columns>
                     <placeholder>
-                        <Label text="Nenhuma encomenda encontrada." style="-fx-text-fill: #aaa;"/>
+                        <Label text="Nenhuma encomenda ativa encontrada." style="-fx-text-fill: #aaa;"/>
                     </placeholder>
                 </TableView>
 

@@ -29,6 +29,7 @@ public class EncomendasController {
 
     @FXML private TextField                        campoBusca;
     @FXML private TableView<Encomenda>             tabelaEncomendas;
+    @FXML private TableColumn<Encomenda, String>   colId;
     @FXML private TableColumn<Encomenda, String>   colCliente;
     @FXML private TableColumn<Encomenda, String>   colItens;
     @FXML private TableColumn<Encomenda, String>   colEntrega;
@@ -75,6 +76,11 @@ public class EncomendasController {
     }
 
     private void configurarColunas() {
+        colId.setCellValueFactory(c -> {
+            Long id = c.getValue().getIdEncomenda();
+            return new SimpleStringProperty(id != null ? String.format("%03d", id) : "—");
+        });
+
         colCliente.setCellValueFactory(c -> new SimpleStringProperty(c.getValue().getNomeCliente()));
 
         colItens.setCellValueFactory(c -> {
@@ -99,6 +105,7 @@ public class EncomendasController {
             return new SimpleStringProperty(v != null ? "R$ " + String.format("%.2f", v) : "—");
         });
 
+        colId.setStyle("-fx-alignment: CENTER; -fx-text-fill: #888888; -fx-font-size: 12px;");
         colEntrega.setStyle("-fx-alignment: CENTER;");
         colSituacao.setStyle("-fx-alignment: CENTER;");
         colValor.setStyle("-fx-alignment: CENTER;");
@@ -110,7 +117,9 @@ public class EncomendasController {
     }
 
     private void carregar() {
-        todos = encomendaService.listarTodas();
+        todos = encomendaService.listarTodas().stream()
+                .filter(e -> e.getSituacao() != SituacaoEncomenda.ENTREGUE)
+                .toList();
         filtrar(campoBusca.getText());
     }
 
@@ -119,11 +128,17 @@ public class EncomendasController {
         if (termo == null || termo.isBlank()) {
             filtrados = todos;
         } else {
-            String lower = termo.toLowerCase();
+            String lower = termo.toLowerCase().trim().replace("#", "");
             filtrados = todos.stream()
-                    .filter(e -> e.getNomeCliente().toLowerCase().contains(lower)
-                            || (e.getItens() != null && e.getItens().stream()
-                            .anyMatch(i -> i.getNome().toLowerCase().contains(lower))))
+                    .filter(e -> {
+                        String idStr = e.getIdEncomenda() != null ? String.valueOf(e.getIdEncomenda()) : "";
+                        String idFormatado = e.getIdEncomenda() != null ? String.format("%03d", e.getIdEncomenda()) : "";
+                        boolean bateId = idStr.equals(lower) || idFormatado.contains(lower);
+                        boolean bateCliente = e.getNomeCliente() != null && e.getNomeCliente().toLowerCase().contains(lower);
+                        boolean bateItem = e.getItens() != null && e.getItens().stream()
+                                .anyMatch(i -> i.getNome() != null && i.getNome().toLowerCase().contains(lower));
+                        return bateId || bateCliente || bateItem;
+                    })
                     .toList();
         }
         exibirPagina();
@@ -178,7 +193,6 @@ public class EncomendasController {
             }
         }
 
-        // Configura botões de acordo com a situação atual
         SituacaoEncomenda prox = proximaSituacao(e.getSituacao());
         if (prox != null) {
             btnAvancarSituacao.setText("Marcar como " + formatarSituacao(prox));
@@ -227,7 +241,12 @@ public class EncomendasController {
 
         Encomenda atualizada = encomendaService.alterarSituacao(sel.getIdEncomenda(), prox);
         carregar();
-        mostrarDetalhes(atualizada);
+        if (atualizada.getSituacao() == SituacaoEncomenda.ENTREGUE) {
+            painelDetalhes.setVisible(false);
+            painelDetalhes.setManaged(false);
+        } else {
+            mostrarDetalhes(atualizada);
+        }
     }
 
     @FXML
@@ -260,6 +279,16 @@ public class EncomendasController {
         if (sp instanceof javafx.scene.layout.StackPane stackPane
                 && stackPane.getUserData() instanceof MainLayoutController main)
             main.navCadastrarEncomenda();
+    }
+
+    @FXML
+    public void abrirHistorico() {
+        javafx.scene.Scene scene = tabelaEncomendas.getScene();
+        if (scene == null) return;
+        javafx.scene.Node sp = scene.lookup("#contentArea");
+        if (sp instanceof javafx.scene.layout.StackPane stackPane
+                && stackPane.getUserData() instanceof MainLayoutController main)
+            main.navHistoricoEncomendas();
     }
 
     @FXML
