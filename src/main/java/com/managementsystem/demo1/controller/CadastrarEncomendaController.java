@@ -2,10 +2,13 @@ package com.managementsystem.demo1.controller;
 
 import com.managementsystem.demo1.model.Encomenda;
 import com.managementsystem.demo1.model.Material;
+import com.managementsystem.demo1.model.Produto;
+import com.managementsystem.demo1.model.ProdutoMaterial;
 import com.managementsystem.demo1.service.EncomendaService;
 import com.managementsystem.demo1.service.ItemEncomendaInput;
 import com.managementsystem.demo1.service.ItemMaterialInput;
 import com.managementsystem.demo1.service.MaterialService;
+import com.managementsystem.demo1.service.ProdutoService;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
@@ -30,6 +33,16 @@ public class CadastrarEncomendaController {
     @FXML private TextField campoCliente;
     @FXML private TextField campoContato;
 
+    // Seletor de tipo de item
+    @FXML private RadioButton       rbTipoPersonalizado;
+    @FXML private RadioButton       rbTipoPrePronto;
+    @FXML private VBox              secaoPrePronto;
+    @FXML private ComboBox<Produto> comboProdutoPrePronto;
+    @FXML private TextField         campoQtdPrePronto;
+    @FXML private Label             labelInfoPrePronto;
+    @FXML private VBox              secaoPersonalizado;
+
+    // Campos do item personalizado
     @FXML private TextField campoNome;
     @FXML private TextArea  campoDescricao;
     @FXML private TextField campoPrazo;
@@ -71,19 +84,55 @@ public class CadastrarEncomendaController {
 
     private final EncomendaService encomendaService;
     private final MaterialService  materialService;
+    private final ProdutoService   produtoService;
 
-    public CadastrarEncomendaController(EncomendaService encomendaService, MaterialService materialService) {
+    public CadastrarEncomendaController(EncomendaService encomendaService,
+                                        MaterialService materialService,
+                                        ProdutoService produtoService) {
         this.encomendaService = encomendaService;
         this.materialService  = materialService;
+        this.produtoService   = produtoService;
     }
 
     @FXML
     public void initialize() {
+        configurarToggleTipoItem();
         configurarTogglePreco();
         carregarMateriais();
+        carregarProdutosPreProntos();
+
         campoCliente.textProperty().addListener((o, a, v) ->
                 previewCliente.setText(v.isBlank() ? "Cliente" : "Encomenda de " + v.trim()));
         campoValorManual.textProperty().addListener((o, a, v) -> atualizarValorItem());
+        campoQtdPrePronto.textProperty().addListener((o, a, v) -> atualizarValorItem());
+        comboProdutoPrePronto.valueProperty().addListener((o, a, produto) -> {
+            atualizarInfoPrePronto(produto);
+            atualizarValorItem();
+        });
+    }
+
+    private void configurarToggleTipoItem() {
+        ToggleGroup grupoTipo = new ToggleGroup();
+        rbTipoPersonalizado.setToggleGroup(grupoTipo);
+        rbTipoPrePronto.setToggleGroup(grupoTipo);
+
+        rbTipoPersonalizado.setSelected(true);
+        alternarVisibilidadeTipo(false);
+
+        grupoTipo.selectedToggleProperty().addListener((obs, ant, novo) -> {
+            boolean isPrePronto = novo == rbTipoPrePronto;
+            alternarVisibilidadeTipo(isPrePronto);
+            setStatus("", false);
+            atualizarValorItem();
+        });
+    }
+
+    private void alternarVisibilidadeTipo(boolean isPrePronto) {
+        secaoPrePronto.setVisible(isPrePronto);
+        secaoPrePronto.setManaged(isPrePronto);
+
+        secaoPersonalizado.setVisible(!isPrePronto);
+        secaoPersonalizado.setManaged(!isPrePronto);
     }
 
     private void configurarTogglePreco() {
@@ -111,9 +160,43 @@ public class CadastrarEncomendaController {
         });
     }
 
+    private void carregarProdutosPreProntos() {
+        comboProdutoPrePronto.setItems(FXCollections.observableArrayList(produtoService.listarEstoque()));
+        comboProdutoPrePronto.setConverter(new StringConverter<>() {
+            @Override public String toString(Produto p) {
+                if (p == null) return "";
+                int est = p.getQuantidadeEstoque() != null ? p.getQuantidadeEstoque() : 0;
+                return p.getNome() + " — R$ " + String.format("%.2f", p.getValor()) + " (Estoque: " + est + ")";
+            }
+            @Override public Produto fromString(String s) { return null; }
+        });
+    }
+
+    private void atualizarInfoPrePronto(Produto p) {
+        if (p == null) {
+            labelInfoPrePronto.setText("Selecione um produto para ver detalhes e estoque.");
+            return;
+        }
+        int est = p.getQuantidadeEstoque() != null ? p.getQuantidadeEstoque() : 0;
+        String desc = (p.getDescricao() != null && !p.getDescricao().isBlank()) ? p.getDescricao() : "Sem descrição";
+        labelInfoPrePronto.setText("Código: " + p.getCodigo() + " | Estoque disponível: " + est + " un. | " + desc);
+    }
+
     // ── Item em montagem ────────────────────────────────────────────────
 
     private BigDecimal calcularValorItemAtual() {
+        if (rbTipoPrePronto.isSelected()) {
+            Produto p = comboProdutoPrePronto.getValue();
+            if (p == null || p.getValor() == null) return null;
+            try {
+                int qtd = Integer.parseInt(campoQtdPrePronto.getText().trim());
+                if (qtd <= 0) return null;
+                return p.getValor().multiply(BigDecimal.valueOf(qtd));
+            } catch (NumberFormatException e) {
+                return null;
+            }
+        }
+
         if (rbPrecoManual.isSelected()) {
             try {
                 BigDecimal v = new BigDecimal(campoValorManual.getText().replace(",", "."));
@@ -122,6 +205,7 @@ public class CadastrarEncomendaController {
                 return null;
             }
         }
+
         BigDecimal soma = BigDecimal.ZERO;
         for (int i = 0; i < materiaisSelecionados.size(); i++)
             soma = soma.add(materiaisSelecionados.get(i).getPrecoUnidade().multiply(quantidades.get(i)));
@@ -174,6 +258,57 @@ public class CadastrarEncomendaController {
 
     @FXML
     public void adicionarItem() {
+        if (rbTipoPrePronto.isSelected()) {
+            adicionarItemPrePronto();
+        } else {
+            adicionarItemPersonalizado();
+        }
+    }
+
+    private void adicionarItemPrePronto() {
+        Produto produto = comboProdutoPrePronto.getValue();
+        if (produto == null) {
+            setStatus("Selecione um produto pré-pronto.", true);
+            return;
+        }
+
+        int qtd;
+        try {
+            qtd = Integer.parseInt(campoQtdPrePronto.getText().trim());
+            if (qtd <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            setStatus("Informe uma quantidade válida (número inteiro positivo).", true);
+            return;
+        }
+
+        int estoqueDisponivel = produto.getQuantidadeEstoque() != null ? produto.getQuantidadeEstoque() : 0;
+        if (qtd > estoqueDisponivel) {
+            setStatus("Quantidade maior que o estoque disponível (" + estoqueDisponivel + " un.).", true);
+            return;
+        }
+
+        BigDecimal valorTotal = produto.getValor().multiply(BigDecimal.valueOf(qtd));
+        String nomeItem = qtd > 1 ? produto.getNome() + " (" + qtd + "x)" : produto.getNome();
+
+        itens.add(new ItemEncomendaInput(
+                nomeItem,
+                produto.getDescricao(),
+                produto.getPrazoProducaoDias(),
+                "Produto pré-pronto (Cód: " + produto.getCodigo() + ")",
+                true,
+                valorTotal,
+                List.of(),
+                produto.getIdProduto(),
+                qtd
+        ));
+        valoresItens.add(valorTotal);
+
+        limparCamposItem();
+        setStatus("", false);
+        renderizarItens();
+    }
+
+    private void adicionarItemPersonalizado() {
         if (campoNome.getText().isBlank()) { setStatus("Informe o nome do item.", true); return; }
 
         Integer prazo = null;
@@ -214,11 +349,16 @@ public class CadastrarEncomendaController {
     }
 
     private void limparCamposItem() {
+        comboProdutoPrePronto.setValue(null);
+        campoQtdPrePronto.setText("1");
+        labelInfoPrePronto.setText("Selecione um produto para ver detalhes e estoque.");
+
         campoNome.clear(); campoDescricao.clear(); campoPrazo.clear();
         campoObservacoes.clear(); campoValorManual.clear();
         comboMaterial.setValue(null); campoQtdMaterial.clear();
         materiaisSelecionados.clear(); quantidades.clear();
         listaMateriais.getChildren().clear();
+
         rbPrecoMateriais.setSelected(true);
         campoValorManual.setDisable(true);
         secaoMateriais.setDisable(false);
@@ -280,8 +420,9 @@ public class CadastrarEncomendaController {
     public void salvar() {
         if (salvando) return;
         if (campoCliente.getText().isBlank()) { setStatus("Informe o nome do cliente.", true); return; }
-        if (!campoNome.getText().isBlank()) {
-            setStatus("Há um item preenchido que ainda não foi adicionado. Clique em \"+ Adicionar item à encomenda\".", true);
+        if ((rbTipoPersonalizado.isSelected() && !campoNome.getText().isBlank())
+                || (rbTipoPrePronto.isSelected() && comboProdutoPrePronto.getValue() != null)) {
+            setStatus("Há um item selecionado que ainda não foi adicionado. Clique em \"+ Adicionar item à encomenda\".", true);
             return;
         }
         if (itens.isEmpty()) { setStatus("Adicione ao menos um item à encomenda.", true); return; }
@@ -320,6 +461,7 @@ public class CadastrarEncomendaController {
     public void limpar() {
         campoCliente.clear();
         campoContato.clear();
+        rbTipoPersonalizado.setSelected(true);
         limparCamposItem();
         itens.clear();
         valoresItens.clear();

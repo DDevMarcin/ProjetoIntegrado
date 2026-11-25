@@ -3,6 +3,7 @@ package com.managementsystem.demo1.service;
 import com.managementsystem.demo1.model.*;
 import com.managementsystem.demo1.repository.EncomendaRepository;
 import com.managementsystem.demo1.repository.MaterialRepository;
+import com.managementsystem.demo1.repository.ProdutoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,19 +25,22 @@ public class EncomendaService {
     private final EncomendaRepository encomendaRepository;
     private final MaterialRepository materialRepository;
     private final MaterialService materialService;
+    private final ProdutoRepository produtoRepository;
 
     public EncomendaService(EncomendaRepository encomendaRepository,
                             MaterialRepository materialRepository) {
-        this(encomendaRepository, materialRepository, null);
+        this(encomendaRepository, materialRepository, null, null);
     }
 
     @Autowired
     public EncomendaService(EncomendaRepository encomendaRepository,
                             MaterialRepository materialRepository,
-                            MaterialService materialService) {
+                            MaterialService materialService,
+                            ProdutoRepository produtoRepository) {
         this.encomendaRepository = encomendaRepository;
         this.materialRepository = materialRepository;
         this.materialService = materialService;
+        this.produtoRepository = produtoRepository;
     }
 
     @Transactional
@@ -94,7 +98,7 @@ public class EncomendaService {
             throw new IllegalArgumentException("Nome do item não pode ultrapassar 255 caracteres.");
         }
         if (input.descricao() != null && input.descricao().trim().length() > 255) {
-            throw new IllegalArgumentException("Descrição do item não pode ultrapassar 255 caracteres.");
+            throw new IllegalArgumentException("Descrição do item não podem ultrapassar 255 caracteres.");
         }
         if (input.observacoes() != null && input.observacoes().trim().length() > 500) {
             throw new IllegalArgumentException("Observações do item não podem ultrapassar 500 caracteres.");
@@ -109,6 +113,26 @@ public class EncomendaService {
         item.setObservacoes(vazioParaNull(input.observacoes()));
         item.setPrazoProducaoDias(input.prazoProducaoDias());
         item.setValorManual(input.valorManual());
+        item.setIdProduto(input.idProduto());
+        item.setQuantidadeProduto(input.quantidadeProduto());
+
+        // Caso seja produto PRÉ-PRONTO, dá baixa no estoque do produto
+        if (input.idProduto() != null && produtoRepository != null) {
+            int qtdSolicitada = (input.quantidadeProduto() != null && input.quantidadeProduto() > 0)
+                    ? input.quantidadeProduto() : 1;
+
+            Produto produto = produtoRepository.findById(input.idProduto())
+                    .orElseThrow(() -> new NoSuchElementException("Produto pré-pronto não encontrado: id " + input.idProduto()));
+
+            int estoqueAtual = produto.getQuantidadeEstoque() != null ? produto.getQuantidadeEstoque() : 0;
+            if (estoqueAtual < qtdSolicitada) {
+                throw new IllegalArgumentException(
+                        "Estoque insuficiente para o produto \"" + produto.getNome() + "\". Disponível: " + estoqueAtual);
+            }
+
+            produto.setQuantidadeEstoque(estoqueAtual - qtdSolicitada);
+            produtoRepository.save(produto);
+        }
 
         BigDecimal valor = BigDecimal.ZERO;
         List<ItemMaterialInput> materiais = input.materiais();
@@ -185,13 +209,30 @@ public class EncomendaService {
             throw new IllegalArgumentException("Não é possível mudar de " + atual + " para " + nova + ".");
         }
 
-        // Se a encomenda for cancelada, devolve os materiais ao estoque
+        // Se a encomenda for cancelada, devolve materiais e produtos pré-prontos ao estoque
         if (nova == SituacaoEncomenda.CANCELADA) {
             estornarMateriais(encomenda);
+            estornarProdutosPreProntos(encomenda);
         }
 
         encomenda.setSituacao(nova);
         return encomendaRepository.save(encomenda);
+    }
+
+    private void estornarProdutosPreProntos(Encomenda encomenda) {
+        if (encomenda.getItens() == null || produtoRepository == null) return;
+
+        for (ItemEncomenda item : encomenda.getItens()) {
+            if (item.getIdProduto() != null) {
+                int qtdEstornar = (item.getQuantidadeProduto() != null && item.getQuantidadeProduto() > 0)
+                        ? item.getQuantidadeProduto() : 1;
+                produtoRepository.findById(item.getIdProduto()).ifPresent(produto -> {
+                    int atual = produto.getQuantidadeEstoque() != null ? produto.getQuantidadeEstoque() : 0;
+                    produto.setQuantidadeEstoque(atual + qtdEstornar);
+                    produtoRepository.save(produto);
+                });
+            }
+        }
     }
 
     private void estornarMateriais(Encomenda encomenda) {
