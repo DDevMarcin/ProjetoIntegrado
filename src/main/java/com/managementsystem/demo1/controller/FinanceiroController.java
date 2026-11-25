@@ -195,16 +195,23 @@ public class FinanceiroController {
                     dataInicio.format(DATA_CURTA), dataFim.format(DATA_CURTA)));
         }
 
-        BigDecimal saldoTotal = financeiroService.calcularSaldoTotal();
+        // Totais acumulados gerais (Card Principal do Topo - apenas PAGO)
+        BigDecimal entradasGerais = financeiroService.calcularTotalReceitasPorPeriodo(
+                null, null, SituacaoMovimentacaoFinanceira.PAGO);
+        BigDecimal saidasGerais = financeiroService.calcularTotalDespesasPorPeriodo(
+                null, null, SituacaoMovimentacaoFinanceira.PAGO);
+        BigDecimal saldoTotal = entradasGerais.subtract(saidasGerais);
+
+        lblSaldoTotal.setText(MOEDA_BR.format(saldoTotal));
+        lblEntradaTopo.setText(MOEDA_BR.format(entradasGerais));
+        lblSaidaTopo.setText(MOEDA_BR.format(saidasGerais));
+
+        // Totais do período selecionado (3 Cards de Análise - apenas PAGO)
         BigDecimal receitasPeriodo = financeiroService.calcularTotalReceitasPorPeriodo(
                 dataInicio, dataFim, SituacaoMovimentacaoFinanceira.PAGO);
         BigDecimal despesasPeriodo = financeiroService.calcularTotalDespesasPorPeriodo(
                 dataInicio, dataFim, SituacaoMovimentacaoFinanceira.PAGO);
         BigDecimal saldoLiquido = financeiroService.calcularSaldoLiquidoPorPeriodo(dataInicio, dataFim);
-
-        lblSaldoTotal.setText(MOEDA_BR.format(saldoTotal));
-        lblEntradaTopo.setText(MOEDA_BR.format(receitasPeriodo));
-        lblSaidaTopo.setText(MOEDA_BR.format(despesasPeriodo));
 
         lblReceitasPeriodo.setText(MOEDA_BR.format(receitasPeriodo));
         lblDespesasPeriodo.setText(MOEDA_BR.format(despesasPeriodo));
@@ -262,7 +269,7 @@ public class FinanceiroController {
         }
 
         for (MovimentacaoFinanceira mov : lista) {
-            HBox itemBox = new HBox(10);
+            HBox itemBox = new HBox(8);
             itemBox.setAlignment(Pos.CENTER_LEFT);
             itemBox.setStyle("-fx-border-color: transparent transparent #F1F5F9 transparent; -fx-padding: 0 0 8 0;");
 
@@ -276,12 +283,13 @@ public class FinanceiroController {
             String dataStr = mov.getDataMovimentacao() != null ? mov.getDataMovimentacao().format(DATA_CURTA) : "";
             String catStr = mov.getCategoria() != null ? mov.getCategoria() : "";
             String sub = catStr.isBlank() ? dataStr : dataStr + " • " + catStr;
-            if (mov.getSituacao() == SituacaoMovimentacaoFinanceira.PENDENTE) {
-                sub += " (Pendente)";
+            boolean pendente = mov.getSituacao() == SituacaoMovimentacaoFinanceira.PENDENTE;
+            if (pendente) {
+                sub += " • Pendente";
             }
 
             Label lblSub = new Label(sub);
-            lblSub.setStyle("-fx-font-size: 11px; -fx-text-fill: #888;");
+            lblSub.setStyle("-fx-font-size: 11px; -fx-text-fill: " + (pendente ? "#D97706;" : "#888;"));
 
             info.getChildren().addAll(lblDesc, lblSub);
 
@@ -289,10 +297,21 @@ public class FinanceiroController {
             String sinal = isReceita ? "+" : "-";
             String cor = isReceita ? "#16A34A" : "#D31946";
 
+            VBox direita = new VBox(4);
+            direita.setAlignment(Pos.CENTER_RIGHT);
+
             Label lblVal = new Label(sinal + " " + MOEDA_BR.format(mov.getValor()));
             lblVal.setStyle("-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: " + cor + ";");
+            direita.getChildren().add(lblVal);
 
-            itemBox.getChildren().addAll(info, lblVal);
+            if (pendente) {
+                Button btnPagar = new Button("✓ Pagar");
+                btnPagar.setStyle("-fx-background-color: #FEF3C7; -fx-text-fill: #B45309; -fx-font-size: 10px; -fx-font-weight: bold; -fx-background-radius: 6; -fx-padding: 2 8; -fx-cursor: hand;");
+                btnPagar.setOnAction(e -> confirmarPagamento(mov));
+                direita.getChildren().add(btnPagar);
+            }
+
+            itemBox.getChildren().addAll(info, direita);
             boxMovimentacoes.getChildren().add(itemBox);
         }
     }
@@ -476,5 +495,19 @@ public class FinanceiroController {
         alert.setTitle(titulo);
         alert.setHeaderText(null);
         alert.showAndWait();
+    }
+
+    private void confirmarPagamento(MovimentacaoFinanceira mov) {
+        try {
+            mov.setSituacao(SituacaoMovimentacaoFinanceira.PAGO);
+            if (mov.getTipo() == TipoMovimentacaoFinanceira.RECEITA) {
+                financeiroService.cadastrarReceita(mov);
+            } else {
+                financeiroService.cadastrarDespesa(mov);
+            }
+            atualizarTela();
+        } catch (Exception e) {
+            mostrarErro("Erro ao confirmar pagamento", e.getMessage());
+        }
     }
 }
