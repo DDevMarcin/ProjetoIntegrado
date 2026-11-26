@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx"
+      xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.managementsystem.demo1.controller.NovaReceitaController"
+      spacing="18"
+      prefWidth="440"
+      style="-fx-background-color: #FFF8FB;">
+
+    <padding>
+        <Insets top="24" right="24" bottom="24" left="24"/>
+    </padding>
+
+    <!-- Cabeçalho -->
+    <VBox spacing="5">
+        <Label text="Nova Receita"
+               style="-fx-font-size: 22px;
+                      -fx-font-weight: bold;
+                      -fx-text-fill: #D31946;"/>
+
+        <Label text="Registrar entrada financeira"
+               style="-fx-font-size: 13px;
+                      -fx-text-fill: #777;"/>
+    </VBox>
+
+    <!-- Formulário -->
+    <GridPane hgap="12" vgap="14">
+
+        <columnConstraints>
+            <ColumnConstraints minWidth="105"/>
+            <ColumnConstraints hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <Label text="Descrição:"
+               GridPane.rowIndex="0"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <TextField fx:id="txtDesc"
+                   promptText="Ex: Venda de Terço"
+                   GridPane.columnIndex="1"
+                   GridPane.rowIndex="0"
+                   styleClass="campo-modal"/>
+
+        <Label text="Valor (R$):"
+               GridPane.rowIndex="1"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <TextField fx:id="txtValor"
+                   promptText="Ex: 60,00"
+                   GridPane.columnIndex="1"
+                   GridPane.rowIndex="1"
+                   styleClass="campo-modal"/>
+
+        <Label text="Categoria:"
+               GridPane.rowIndex="2"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <TextField fx:id="txtCategoria"
+                   text="Vendas"
+                   GridPane.columnIndex="1"
+                   GridPane.rowIndex="2"
+                   styleClass="campo-modal"/>
+
+        <Label text="Data:"
+               GridPane.rowIndex="3"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <DatePicker fx:id="dpData"
+                    maxWidth="Infinity"
+                    GridPane.columnIndex="1"
+                    GridPane.rowIndex="3"/>
+
+        <Label text="Situação:"
+               GridPane.rowIndex="4"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <ComboBox fx:id="cbSituacao"
+                  maxWidth="Infinity"
+                  GridPane.columnIndex="1"
+                  GridPane.rowIndex="4"/>
+
+        <Label text="Observações:"
+               GridPane.rowIndex="5"
+               style="-fx-text-fill: #1A1A2E; -fx-font-weight: bold;"/>
+
+        <TextField fx:id="txtObs"
+                   promptText="Opcional"
+                   GridPane.columnIndex="1"
+                   GridPane.rowIndex="5"
+                   styleClass="campo-modal"/>
+
+    </GridPane>
+
+</VBox>

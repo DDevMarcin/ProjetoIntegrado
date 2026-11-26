@@ -17,6 +17,9 @@ import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import java.io.IOException;
 
 import java.io.File;
 import java.io.PrintWriter;
@@ -76,6 +79,7 @@ public class FinanceiroController {
     private LocalDate dataInicio;
     private LocalDate dataFim;
     private TipoMovimentacaoFinanceira tipoFiltro = null;
+    
 
     public FinanceiroController(MovimentacaoFinanceiraService financeiroService,
                                 CategoriaDespesaService categoriaDespesaService) {
@@ -318,136 +322,124 @@ public class FinanceiroController {
 
     // ── Modais de Cadastro ──
 
+    
     @FXML
     public void abrirModalNovaDespesa() {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Nova Despesa");
-        dialog.setHeaderText("Registrar saída financeira");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/NovaDespesa.fxml")
+            );
 
-        ButtonType btnSalvar = new ButtonType("Salvar Despesa", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(btnSalvar, ButtonType.CANCEL);
+            Parent conteudo = loader.load();
+            NovaDespesaController controller = loader.getController();
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(16));
+            controller.carregarCategorias(categoriaDespesaService.listarTodas());
 
-        TextField txtDesc = new TextField();
-        txtDesc.setPromptText("Ex: Compra de miçangas");
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Nova Despesa");
 
-        TextField txtValor = new TextField();
-        txtValor.setPromptText("Ex: 45,50");
+            ButtonType btnSalvar = new ButtonType(
+                    "Salvar Despesa",
+                    ButtonBar.ButtonData.OK_DONE
+            );
 
-        ComboBox<CategoriaDespesa> cbCategoria = new ComboBox<>(
-                FXCollections.observableArrayList(categoriaDespesaService.listarTodas()));
-        cbCategoria.setConverter(new StringConverter<>() {
-            @Override public String toString(CategoriaDespesa c) { return c != null ? c.getNome() : ""; }
-            @Override public CategoriaDespesa fromString(String s) { return null; }
-        });
-        if (!cbCategoria.getItems().isEmpty()) {
-            cbCategoria.getSelectionModel().selectFirst();
-        }
+            dialog.getDialogPane().getButtonTypes().addAll(
+                    btnSalvar,
+                    ButtonType.CANCEL
+            );
 
-        DatePicker dpData = new DatePicker(LocalDate.now());
-        ComboBox<SituacaoMovimentacaoFinanceira> cbSituacao = new ComboBox<>(
-                FXCollections.observableArrayList(SituacaoMovimentacaoFinanceira.values()));
-        cbSituacao.setValue(SituacaoMovimentacaoFinanceira.PAGO);
+            dialog.getDialogPane().setContent(conteudo);
 
-        TextField txtObs = new TextField();
-        txtObs.setPromptText("Opcional");
+            dialog.showAndWait().ifPresent(res -> {
+                if (res == btnSalvar) {
+                    try {
+                        BigDecimal valor = parseMoeda(controller.getValor());
 
-        grid.addRow(0, new Label("Descrição:"), txtDesc);
-        grid.addRow(1, new Label("Valor (R$):"), txtValor);
-        grid.addRow(2, new Label("Categoria:"), cbCategoria);
-        grid.addRow(3, new Label("Data:"), dpData);
-        grid.addRow(4, new Label("Situação:"), cbSituacao);
-        grid.addRow(5, new Label("Observações:"), txtObs);
+                        CategoriaDespesa categoria = controller.getCategoria();
 
-        dialog.getDialogPane().setContent(grid);
+                        if (categoria == null) {
+                            throw new IllegalArgumentException(
+                                    "Selecione uma categoria."
+                            );
+                        }
 
-        dialog.showAndWait().ifPresent(res -> {
-            if (res == btnSalvar) {
-                try {
-                    BigDecimal valor = parseMoeda(txtValor.getText());
-                    CategoriaDespesa cat = cbCategoria.getValue();
-                    if (cat == null) {
-                        throw new IllegalArgumentException("Selecione uma categoria.");
+                        financeiroService.cadastrarDespesaPorCategoria(
+                                controller.getDescricao(),
+                                valor,
+                                categoria.getIdCategoria(),
+                                controller.getSituacao(),
+                                controller.getData(),
+                                null,
+                                controller.getObservacoes()
+                        );
+
+                        atualizarTela();
+
+                    } catch (Exception e) {
+                        mostrarErro("Erro ao salvar despesa", e.getMessage());
                     }
-                    financeiroService.cadastrarDespesaPorCategoria(
-                            txtDesc.getText(),
-                            valor,
-                            cat.getIdCategoria(),
-                            cbSituacao.getValue(),
-                            dpData.getValue(),
-                            null,
-                            txtObs.getText()
-                    );
-                    atualizarTela();
-                } catch (Exception e) {
-                    mostrarErro("Erro ao salvar despesa", e.getMessage());
                 }
-            }
-        });
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            mostrarErro("Erro ao abrir modal", e.toString());
+        }
     }
+
 
     @FXML
     public void abrirModalNovaReceita() {
-        Dialog<ButtonType> dialog = new Dialog<>();
-        dialog.setTitle("Nova Receita");
-        dialog.setHeaderText("Registrar entrada financeira");
+        try {
+            FXMLLoader loader = new FXMLLoader(
+                    getClass().getResource("/fxml/NovaReceita.fxml")
+            );
 
-        ButtonType btnSalvar = new ButtonType("Salvar Receita", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(btnSalvar, ButtonType.CANCEL);
+            Parent conteudo = loader.load();
+            NovaReceitaController controller = loader.getController();
 
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(16));
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Nova Receita");
 
-        TextField txtDesc = new TextField();
-        txtDesc.setPromptText("Ex: Venda de Terço");
+            ButtonType btnSalvar = new ButtonType(
+                    "Salvar Receita",
+                    ButtonBar.ButtonData.OK_DONE
+            );
 
-        TextField txtValor = new TextField();
-        txtValor.setPromptText("Ex: 60,00");
+            dialog.getDialogPane().getButtonTypes().addAll(
+                    btnSalvar,
+                    ButtonType.CANCEL
+            );
 
-        TextField txtCategoria = new TextField("Vendas");
+            dialog.getDialogPane().setContent(conteudo);
 
-        DatePicker dpData = new DatePicker(LocalDate.now());
-        ComboBox<SituacaoMovimentacaoFinanceira> cbSituacao = new ComboBox<>(
-                FXCollections.observableArrayList(SituacaoMovimentacaoFinanceira.values()));
-        cbSituacao.setValue(SituacaoMovimentacaoFinanceira.PAGO);
+            dialog.showAndWait().ifPresent(res -> {
+                if (res == btnSalvar) {
+                    try {
+                        BigDecimal valor = parseMoeda(controller.getValor());
 
-        TextField txtObs = new TextField();
-        txtObs.setPromptText("Opcional");
+                        financeiroService.cadastrarReceita(
+                                controller.getDescricao(),
+                                valor,
+                                controller.getCategoria(),
+                                controller.getSituacao(),
+                                controller.getData(),
+                                null,
+                                controller.getObservacoes()
+                        );
 
-        grid.addRow(0, new Label("Descrição:"), txtDesc);
-        grid.addRow(1, new Label("Valor (R$):"), txtValor);
-        grid.addRow(2, new Label("Categoria:"), txtCategoria);
-        grid.addRow(3, new Label("Data:"), dpData);
-        grid.addRow(4, new Label("Situação:"), cbSituacao);
-        grid.addRow(5, new Label("Observações:"), txtObs);
+                        atualizarTela();
 
-        dialog.getDialogPane().setContent(grid);
-
-        dialog.showAndWait().ifPresent(res -> {
-            if (res == btnSalvar) {
-                try {
-                    BigDecimal valor = parseMoeda(txtValor.getText());
-                    financeiroService.cadastrarReceita(
-                            txtDesc.getText(),
-                            valor,
-                            txtCategoria.getText(),
-                            cbSituacao.getValue(),
-                            dpData.getValue(),
-                            null,
-                            txtObs.getText()
-                    );
-                    atualizarTela();
-                } catch (Exception e) {
-                    mostrarErro("Erro ao salvar receita", e.getMessage());
+                    } catch (Exception e) {
+                        mostrarErro("Erro ao salvar receita", e.getMessage());
+                    }
                 }
-            }
-        });
+            });
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            mostrarErro("Erro ao abrir modal", e.toString());
+        }
     }
 
     @FXML
