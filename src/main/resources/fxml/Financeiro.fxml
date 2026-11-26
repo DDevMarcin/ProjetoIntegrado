@@ -13,7 +13,7 @@
             style="-fx-background-color: #FFF8FB; -fx-background: #FFF8FB;">
 
     <content>
-        <HBox spacing="20" style="-fx-background-color: #FFF8FB;">
+        <HBox spacing="20" minHeight="600" style="-fx-background-color: #FFF8FB;">
             <padding>
                 <Insets top="24" right="28" bottom="28" left="28"/>
             </padding>
@@ -139,7 +139,7 @@
                 </VBox>
 
                 <!-- Botões de Ação -->
-                <HBox spacing="12" alignment="CENTER" style="-fx-padding: 6 0 4 0;">
+                <HBox spacing="12" alignment="CENTER_RIGHT" style="-fx-padding: 6 0 4 0;">
                     <Button text="+ Nova Despesa" onAction="#abrirModalNovaDespesa"
                             style="-fx-background-color: #D31946; -fx-text-fill: white; -fx-font-weight: bold; -fx-background-radius: 10; -fx-padding: 9 20; -fx-cursor: hand;"/>
                     <Button text="+ Nova Receita" onAction="#abrirModalNovaReceita"
@@ -152,6 +152,7 @@
 
             <!-- COLUNA DIREITA (ÚLTIMAS MOVIMENTAÇÕES) -->
             <VBox spacing="12" prefWidth="310" minWidth="310" maxWidth="310"
+                  prefHeight="750" minHeight="750" maxHeight="750"
                   style="-fx-background-color: white; -fx-background-radius: 16; -fx-padding: 18; -fx-border-color: #f5d6e0; -fx-border-radius: 16;">
                 <Label text="Últimas&#10;movimentações"
                        style="-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #D31946;"/>

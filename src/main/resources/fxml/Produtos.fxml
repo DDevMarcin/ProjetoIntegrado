@@ -41,7 +41,7 @@
             <!-- Coluna esquerda: card da tabela -->
             <VBox spacing="0" styleClass="card-tabela" HBox.hgrow="ALWAYS">
 
-                <Label text="Produtos disponíveis" styleClass="card-titulo"/>
+                <Label text="Produtos disponíveis" textAlignment="CENTER" styleClass="card-titulo"/>
 
                 <TableView fx:id="tabelaProdutos"
                            VBox.vgrow="ALWAYS"
