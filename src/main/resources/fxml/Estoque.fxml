@@ -62,33 +62,17 @@
 
                 <Region HBox.hgrow="ALWAYS"/>
 
-                <!-- Botões de ação rápida -->
-                <VBox spacing="8" alignment="CENTER_RIGHT">
-                    <Button text="↻  Registrar Movimentação"
-                            onAction="#abrirRegistrarMovimentacao"
-                            style="-fx-background-color: white; -fx-background-radius: 20;
-                                   -fx-border-color: #ccc; -fx-border-radius: 20; -fx-border-width: 1.5;
-                                   -fx-text-fill: #555; -fx-font-size: 17px; -fx-font-weight: bold;
-                                   -fx-padding: 8 18 8 18; -fx-cursor: hand;"/>
-                    <Button text="↘  Registrar Perda"
-                            onAction="#abrirRegistrarPerdaRapida"
-                            style="-fx-background-color: white; -fx-background-radius: 20;
-                                   -fx-border-color: #D31946; -fx-border-radius: 20; -fx-border-width: 1.5;
-                                   -fx-text-fill: #D31946; -fx-font-size: 17px; -fx-font-weight: bold;
-                                   -fx-padding: 8 18 8 18; -fx-cursor: hand;"/>
-                </VBox>
-
             </HBox>
         </VBox>
     </top>
 
     <!-- ══════════════════════════════════════════════════════
-         CENTER: duas tabelas (esquerda) + painel detalhes (direita)
+         CENTER: uma tabela (esquerda) + painel detalhes (direita)
          ══════════════════════════════════════════════════════ -->
     <center>
         <HBox spacing="16">
 
-            <!-- ── Coluna esquerda: tabelas empilhadas ── -->
+            <!-- ── Coluna esquerda: tabela ── -->
             <ScrollPane fitToWidth="true" HBox.hgrow="ALWAYS"
                         style="-fx-background-color: transparent; -fx-background: transparent; -fx-border-color: transparent;">
                 <content>
@@ -126,7 +110,7 @@
 
                             <TableView fx:id="tabelaMateriais"
                                        VBox.vgrow="ALWAYS"
-                                       prefHeight="260"
+                                       prefHeight="325"
                                        styleClass="tabela-produtos">
                                 <columns>
                                     <TableColumn fx:id="colMatNome"       text="Nome"            prefWidth="220"/>
@@ -152,63 +136,16 @@
                             </HBox>
 
                         </VBox>
-
-                        <!-- ════════════════════════════════
-                             TABELA DE PRODUTOS
-                             ════════════════════════════════ -->
-
-                        <!-- Barra busca produtos -->
-                        <HBox spacing="12" alignment="CENTER_LEFT">
-                            <TextField fx:id="campoBuscaProduto"
-                                       promptText="Buscar produtos"
-                                       prefWidth="300"
-                                       styleClass="busca-field"/>
-                            <Region HBox.hgrow="ALWAYS"/>
-                        </HBox>
-
-                        <!-- Card tabela produtos -->
-                        <VBox spacing="0" styleClass="card-tabela">
-
-                            <HBox alignment="CENTER_LEFT" style="-fx-padding: 16 20 12 20;">
-                                <Label fx:id="labelTituloProdutos"
-                                       text="Controle de Produtos"
-                                       styleClass="card-titulo"
-                                       style="-fx-padding: 0;"/>
-                                <Region HBox.hgrow="ALWAYS"/>
-                                <Label fx:id="labelSubtituloProdutos"
-                                       text=""
-                                       style="-fx-font-size: 14px; -fx-text-fill: #aaa;"/>
-                            </HBox>
-
-                            <TableView fx:id="tabelaProdutos"
-                                       VBox.vgrow="ALWAYS"
-                                       prefHeight="260"
-                                       styleClass="tabela-produtos">
-                                <columns>
-                                    <TableColumn fx:id="colProdNome"       text="Nome"           prefWidth="220"/>
-                                    <TableColumn fx:id="colProdCodigo"     text="Código"         prefWidth="70"/>
-                                    <TableColumn fx:id="colProdQuantidade" text="Quantidade"     prefWidth="100"/>
-                                    <TableColumn fx:id="colProdValor"      text="Valor unitário" prefWidth="110"/>
-                                </columns>
-                                <placeholder>
-                                    <Label text="Nenhum produto encontrado." style="-fx-text-fill: #aaa;"/>
-                                </placeholder>
-                            </TableView>
-
-                            <!-- Rodapé produtos -->
-                            <HBox alignment="CENTER_LEFT" styleClass="rodape-tabela">
-                                <Label fx:id="labelTotalProdutos" text="Total de Produtos: 0" styleClass="rodape-label-total"/>
-                                <Region HBox.hgrow="ALWAYS"/>
-                                <HBox spacing="6" alignment="CENTER">
-                                    <Button fx:id="btnAnteriorProd" text="&#8249;" onAction="#paginaAnteriorProd" styleClass="btn-pagina"/>
-                                    <Label  fx:id="labelPaginaProd" text="Página 1"                               styleClass="rodape-label-pagina"/>
-                                    <Button fx:id="btnProximoProd"  text="&#8250;" onAction="#proximaPaginaProd"  styleClass="btn-pagina"/>
-                                </HBox>
-                            </HBox>
-
-                        </VBox>
-
-                    </VBox>
+                        
+                    <HBox alignment="CENTER_RIGHT">    
+                        <Button text="↻  Registrar Movimentação"
+                            onAction="#abrirRegistrarMovimentacao"
+                            style="-fx-background-color: white; -fx-background-radius: 20;
+                                   -fx-border-color: #ccc; -fx-border-radius: 20; -fx-border-width: 1.5;
+                                   -fx-text-fill: #555; -fx-font-size: 17px; -fx-font-weight: bold;
+                                   -fx-padding: 8 18 8 18; -fx-cursor: hand;"/>
+                    </HBox>
+                </VBox>
                 </content>
             </ScrollPane>
 
@@ -326,13 +263,6 @@
                                         style="-fx-background-color: #e8f5e9; -fx-background-radius: 8;
                                                -fx-border-color: #a5d6a7; -fx-border-radius: 8;
                                                -fx-border-width: 1; -fx-text-fill: #2e7d32;
-                                               -fx-font-size: 13px; -fx-font-weight: bold;
-                                               -fx-padding: 6 12 6 12; -fx-cursor: hand;"/>
-                                <Button text="Registrar Perda"
-                                        onAction="#registrarPerda"
-                                        style="-fx-background-color: #fff3e0; -fx-background-radius: 8;
-                                               -fx-border-color: #ffcc80; -fx-border-radius: 8;
-                                               -fx-border-width: 1; -fx-text-fill: #e65100;
                                                -fx-font-size: 13px; -fx-font-weight: bold;
                                                -fx-padding: 6 12 6 12; -fx-cursor: hand;"/>
                             </HBox>
