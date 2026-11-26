@@ -1,9 +1,6 @@
 package com.managementsystem.demo1.controller;
 
 import com.managementsystem.demo1.model.Material;
-import com.managementsystem.demo1.model.Produto;
-import com.managementsystem.demo1.model.ProdutoMaterial;
-import com.managementsystem.demo1.model.TipoProduto;
 import com.managementsystem.demo1.model.TipoMovimentacaoMaterial;
 import com.managementsystem.demo1.service.MaterialService;
 import com.managementsystem.demo1.service.ProdutoService;
@@ -22,7 +19,6 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 @Scope("prototype")
@@ -47,19 +43,6 @@ public class EstoqueController {
     @FXML private Label                            labelPaginaMat;
     @FXML private Button                           btnAnteriorMat;
     @FXML private Button                           btnProximoMat;
-
-    // ── Tabela de Produtos ─────────────────────────────────────────────────
-    @FXML private TextField                        campoBuscaProduto;
-    @FXML private TableView<Produto>               tabelaProdutos;
-    @FXML private TableColumn<Produto, String>     colProdNome;
-    @FXML private TableColumn<Produto, String>     colProdCodigo;
-    @FXML private TableColumn<Produto, String>     colProdQuantidade;
-    @FXML private TableColumn<Produto, String>     colProdValor;
-    @FXML private Label                            labelTotalProdutos;
-    @FXML private Label                            labelSubtituloProdutos;
-    @FXML private Label                            labelPaginaProd;
-    @FXML private Button                           btnAnteriorProd;
-    @FXML private Button                           btnProximoProd;
 
     // ── Painel de detalhes (compartilhado) ────────────────────────────────
     @FXML private ScrollPane painelDetalhes;
@@ -91,12 +74,9 @@ public class EstoqueController {
     private static final BigDecimal LIMITE_ESTOQUE_BAIXO = new BigDecimal("5");
 
     private int paginaMat  = 1;
-    private int paginaProd = 1;
 
     private List<Material> todosMateriais     = List.of();
     private List<Material> materiaisFiltrados = List.of();
-    private List<Produto>  todosProdutos      = List.of();
-    private List<Produto>  produtosFiltrados  = List.of();
 
     // estado dos filtros de alerta
     private boolean filtrandoForaEstoque  = false;
@@ -104,15 +84,14 @@ public class EstoqueController {
 
 
     private Material materialSelecionado = null;
-    private Produto  produtoSelecionado  = null;
 
     // ── Dependências ──────────────────────────────────────────────────────
     private final MaterialService materialService;
-    private final ProdutoService  produtoService;
+    private final ProdutoService produtoService;
 
     public EstoqueController(MaterialService materialService, ProdutoService produtoService) {
         this.materialService = materialService;
-        this.produtoService  = produtoService;
+         this.produtoService = produtoService;
     }
 
     // ── Inicialização ──────────────────────────────────────────────────────
@@ -120,15 +99,11 @@ public class EstoqueController {
     @FXML
     public void initialize() {
         tabelaMateriais.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        tabelaProdutos.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
 
         configurarColunasMateriais();
-        configurarColunasProdutos();
         configurarSelecaoMateriais();
-        configurarSelecaoProdutos();
 
         campoBuscaMaterial.textProperty().addListener((obs, ant, novo) -> filtrarMateriais(novo));
-        campoBuscaProduto.textProperty().addListener((obs, ant, novo) -> filtrarProdutos(novo));
 
         // Clique nos cards filtra a tabela de materiais
         cardForaEstoque.setOnMouseClicked(e -> toggleFiltroForaEstoque());
@@ -166,53 +141,13 @@ public class EstoqueController {
         colMatValor.setStyle("-fx-alignment: CENTER;");
     }
 
-    private void configurarColunasProdutos() {
-        colProdCodigo.setCellValueFactory(c ->
-                new SimpleStringProperty(c.getValue().getCodigo()));
-
-        colProdNome.setCellValueFactory(c ->
-                new SimpleStringProperty(c.getValue().getNome()));
-
-        colProdQuantidade.setCellValueFactory(c -> {
-            Produto p = c.getValue();
-            String qtd = (p.getTipo() == TipoProduto.PRE_PRONTO && p.getQuantidadeEstoque() != null)
-                    ? String.format("%03d", p.getQuantidadeEstoque())
-                    : "—";
-            return new SimpleStringProperty(qtd);
-        });
-
-        colProdValor.setCellValueFactory(c -> {
-            BigDecimal v = c.getValue().getValor();
-            return new SimpleStringProperty(v != null ? "R$" + String.format("%.2f", v) : "—");
-        });
-
-        colProdCodigo.setStyle("-fx-alignment: CENTER;");
-        colProdQuantidade.setStyle("-fx-alignment: CENTER;");
-        colProdValor.setStyle("-fx-alignment: CENTER;");
-    }
-
     private void configurarSelecaoMateriais() {
         tabelaMateriais.getSelectionModel().selectedItemProperty()
                 .addListener((obs, ant, mat) -> {
                     if (mat != null) {
                         // Limpa seleção da outra tabela
-                        tabelaProdutos.getSelectionModel().clearSelection();
-                        produtoSelecionado = null;
                         materialSelecionado = mat;
                         mostrarDetalhesMaterial(mat);
-                    }
-                });
-    }
-
-    private void configurarSelecaoProdutos() {
-        tabelaProdutos.getSelectionModel().selectedItemProperty()
-                .addListener((obs, ant, prod) -> {
-                    if (prod != null) {
-                        // Limpa seleção da outra tabela
-                        tabelaMateriais.getSelectionModel().clearSelection();
-                        materialSelecionado = null;
-                        produtoSelecionado = prod;
-                        mostrarDetalhesProduto(prod);
                     }
                 });
     }
@@ -221,10 +156,8 @@ public class EstoqueController {
 
     private void carregarTudo() {
         todosMateriais = materialService.listarTodos();
-        todosProdutos  = produtoService.listarEstoque();
         atualizarCards();
         filtrarMateriais(campoBuscaMaterial.getText());
-        filtrarProdutos(campoBuscaProduto.getText());
     }
 
     private void atualizarCards() {
@@ -325,43 +258,6 @@ public class EstoqueController {
     @FXML public void paginaAnteriorMat() { if (paginaMat > 1) { paginaMat--; exibirPaginaMateriais(); } }
     @FXML public void proximaPaginaMat()  { paginaMat++; exibirPaginaMateriais(); }
 
-    // ── Filtro e paginação — Produtos ──────────────────────────────────────
-
-    private void filtrarProdutos(String termo) {
-        paginaProd = 1;
-        if (termo == null || termo.isBlank()) {
-            produtosFiltrados = todosProdutos;
-        } else {
-            String lower = termo.toLowerCase();
-            produtosFiltrados = todosProdutos.stream()
-                    .filter(p -> p.getNome().toLowerCase().contains(lower)
-                              || p.getCodigo().toLowerCase().contains(lower))
-                    .toList();
-        }
-        exibirPaginaProdutos();
-    }
-
-    private void exibirPaginaProdutos() {
-        int total        = produtosFiltrados.size();
-        int totalPaginas = Math.max(1, (int) Math.ceil((double) total / ITENS_POR_PAGINA));
-        paginaProd = Math.max(1, Math.min(paginaProd, totalPaginas));
-
-        int inicio = (paginaProd - 1) * ITENS_POR_PAGINA;
-        int fim    = Math.min(inicio + ITENS_POR_PAGINA, total);
-
-        tabelaProdutos.setItems(FXCollections.observableArrayList(produtosFiltrados.subList(inicio, fim)));
-
-        labelTotalProdutos.setText("Total de Produtos: " + total);
-        labelSubtituloProdutos.setText(
-                Math.min(fim, total) + " de " + todosProdutos.size() + " produtos em estoque");
-        labelPaginaProd.setText("Página " + paginaProd);
-        btnAnteriorProd.setDisable(paginaProd <= 1);
-        btnProximoProd.setDisable(paginaProd >= totalPaginas);
-    }
-
-    @FXML public void paginaAnteriorProd() { if (paginaProd > 1) { paginaProd--; exibirPaginaProdutos(); } }
-    @FXML public void proximaPaginaProd()  { paginaProd++; exibirPaginaProdutos(); }
-
     // ── Painel de detalhes — Material ──────────────────────────────────────
 
     private void mostrarDetalhesMaterial(Material m) {
@@ -423,76 +319,6 @@ public class EstoqueController {
         exibirPainel();
     }
 
-    // ── Painel de detalhes — Produto ───────────────────────────────────────
-
-    private void mostrarDetalhesProduto(Produto p) {
-        detNome.setText(p.getNome());
-        detCodigo.setText(p.getCodigo());
-
-        detValor.setText(p.getValor() != null
-                ? "R$ " + String.format("%.2f", p.getValor())
-                : "—");
-
-        detEstoqueLabel.setText("Estoque:");
-        if (p.getTipo() == TipoProduto.PRE_PRONTO && p.getQuantidadeEstoque() != null) {
-            detEstoque.setText(p.getQuantidadeEstoque() + " unidades");
-        } else {
-            detEstoque.setText("—");
-        }
-
-        // Campos de material — ocultos para produto
-        setVisible(secaoUnidade, false);
-        setVisible(secaoCor, false);
-
-        // Stats placeholder (requer módulo de vendas)
-        detStatTitulo1.setText("Total vendido");
-        detStatValor1.setText("—");
-        detStatTitulo2.setText("Valor total");
-        detStatValor2.setText("—");
-
-        // Descrição
-        detDescricaoTitulo.setText("Descrição");
-        detDescricao.setText(
-                Optional.ofNullable(p.getDescricao())
-                        .filter(d -> !d.isBlank())
-                        .orElse("Sem descrição cadastrada."));
-
-        // Materiais do produto
-        setVisible(secaoMateriaisProduto, true);
-        painelMateriaisProduto.getChildren().clear();
-        List<ProdutoMaterial> materiais = p.getMateriaisUtilizados();
-        if (materiais != null && !materiais.isEmpty()) {
-            for (ProdutoMaterial pm : materiais) {
-                Label tag = new Label(
-                        pm.getQuantidadeUtilizada().stripTrailingZeros().toPlainString()
-                        + "x " + pm.getMaterial().getNome());
-                tag.getStyleClass().add("material-tag");
-                painelMateriaisProduto.getChildren().add(tag);
-            }
-        } else {
-            Label sem = new Label("Nenhum material registrado.");
-            sem.setStyle("-fx-text-fill: #aaa; -fx-font-size: 14px;");
-            painelMateriaisProduto.getChildren().add(sem);
-        }
-
-        // Prazo e tipo
-        boolean isPersonalizado = p.getTipo() == TipoProduto.PERSONALIZADO;
-        setVisible(secaoPrazo, isPersonalizado);
-        if (isPersonalizado) {
-            detPrazo.setText(p.getPrazoProducaoDias() != null
-                    ? p.getPrazoProducaoDias() + " dias"
-                    : "Não informado");
-        }
-
-        setVisible(secaoTipo, true);
-        detTipo.setText(p.getTipo() == TipoProduto.PRE_PRONTO ? "Pré-pronto" : "Personalizado");
-
-        // Movimentação — somente para materiais
-        setVisible(secaoMovimentacao, false);
-
-        exibirPainel();
-    }
-
     private void exibirPainel() {
         painelDetalhes.setVisible(true);
         painelDetalhes.setManaged(true);
@@ -504,8 +330,6 @@ public class EstoqueController {
     public void deletarSelecionado() {
         if (materialSelecionado != null) {
             deletarMaterial(materialSelecionado);
-        } else if (produtoSelecionado != null) {
-            deletarProduto(produtoSelecionado);
         }
     }
 
@@ -519,15 +343,7 @@ public class EstoqueController {
                     && stackPane.getUserData() instanceof MainLayoutController main) {
                 main.navEditarMaterial(materialSelecionado);
             }
-        } else if (produtoSelecionado != null) {
-            javafx.scene.Scene scene = tabelaProdutos.getScene();
-            if (scene == null) return;
-            javafx.scene.Node sp = scene.lookup("#contentArea");
-            if (sp instanceof javafx.scene.layout.StackPane stackPane
-                    && stackPane.getUserData() instanceof MainLayoutController main) {
-                main.navEditarProduto(produtoSelecionado);
-            }
-        }
+        } 
     }
 
     private void deletarMaterial(Material material) {
@@ -542,23 +358,6 @@ public class EstoqueController {
                     carregarTudo();
                 } catch (Exception e) {
                     mostrarErro("Não foi possível deletar o material:\n" + e.getMessage());
-                }
-            }
-        });
-    }
-
-    private void deletarProduto(Produto produto) {
-        Dialog<ButtonType> dialog = criarDialogConfirmacao(produto.getNome());
-        dialog.showAndWait().ifPresent(r -> {
-            if (r == ButtonType.OK) {
-                try {
-                    produtoService.excluir(produto.getIdProduto());
-                    painelDetalhes.setVisible(false);
-                    painelDetalhes.setManaged(false);
-                    produtoSelecionado = null;
-                    carregarTudo();
-                } catch (Exception e) {
-                    mostrarErro("Não foi possível deletar o produto:\n" + e.getMessage());
                 }
             }
         });
