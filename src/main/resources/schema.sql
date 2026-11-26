@@ -82,13 +82,16 @@ CREATE TABLE IF NOT EXISTS encomenda (
 CREATE TABLE IF NOT EXISTS item_encomenda (
     id_item                 INTEGER PRIMARY KEY AUTOINCREMENT,
     id_encomenda            BIGINT          NOT NULL,
+    id_produto              BIGINT          NOT NULL,
     nome                    VARCHAR(255)    NOT NULL,
+    quantidade_produto      INTEGER         NOT NULL DEFAULT 0,
     descricao               VARCHAR(255),
     prazo_producao_dias     INTEGER,
     observacoes             VARCHAR(500),
     valor_manual            BOOLEAN         NOT NULL DEFAULT 0,
     valor                   NUMERIC(12,2)   NOT NULL DEFAULT 0,
-    FOREIGN KEY (id_encomenda) REFERENCES encomenda(id_encomenda) ON DELETE CASCADE
+    FOREIGN KEY (id_encomenda) REFERENCES encomenda(id_encomenda) ON DELETE CASCADE,
+    FOREIGN KEY (id_produto) REFERENCES produto(id_produto) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS item_encomenda_material (
